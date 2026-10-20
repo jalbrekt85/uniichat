@@ -28,7 +28,12 @@ export const OFFER: Offer = {
 export const WORK       = config_path(config_get("work", DIR + "/work"));
 export const RULES      = config_path(config_get("rules", ""));
 export const AFTER      = config_get("after", "");
-export const PICK       = config_run("pick", config_get("pick", "zai-api:glm-5.3:medium:slow"));
+
+// this fork's single local user: every visitor is them, no sign-in (the
+// server binds 127.0.0.1). "": off, the email sign-in instead
+export const USER       = config_get("user", "local");
+
+export const PICK       = config_run("pick", config_get("pick", "zai-api:glm-5.3:max:slow"));
 
 // what every compaction runs on, a chat's and an import's alike, whatever
 // the chat's pick

@@ -84,11 +84,15 @@ also be set as the variable `UNII_<KEY>`:
 - `site`: the server's origin, for sign-in links (default
   http://127.0.0.1:8788). Another port: `UNII_SITE=http://127.0.0.1:9000
   bun Server.ts 9000`.
+- `user`: the one local user, signed in without email or links — every
+  visitor is them (default `local`; the server binds 127.0.0.1). `""`:
+  the email sign-in instead, and a new chat opens with the hello.
 - `vendors`: what the server offers, comma-separated: `zai-api`
   (default), `claude-api`, `openai-api`.
 - `models`: the models offered, by label (Pick.ts; default all).
 - `pick`: what a chat runs on until it picks another,
-  vendor:model:effort:speed (default `zai-api:glm-5.3:medium:slow`).
+  vendor:model:effort:speed (default `zai-api:glm-5.3:max:slow`; z.ai
+  ignores the effort: GLM thinks as it sees fit).
 - `compactor`: what writes the summaries (default
   `zai-api:glm-5.3:low:slow`).
 - `agents`: what subagents run on (default: the chat's pick).

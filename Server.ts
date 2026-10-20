@@ -307,7 +307,9 @@ export namespace Chat {
       Chat.note(chat, saved + " isn't offered here, so the chat now runs on " + Pick.label(pick) + ".");
     }
     mem.pay = tools.pay = wallet.pay;
-    if (mem.count === 0) {
+    // the local fork (config.USER) opens blank: no hello, nothing to sign
+    // in to
+    if (mem.count === 0 && config.USER === "") {
       const hello = HELLO + "\n\n" + email_ask(cloud.billing.github !== null);
       Memory.push(mem, [{ kind: "unii", text: hello, line: HELLO_LINE }, { kind: "user", text: user.name }, { kind: "unii", text: SIGNED }]);
     }

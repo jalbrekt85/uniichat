@@ -126,7 +126,13 @@ export namespace Cloud {
 
   export function who(cloud: Cloud, req: Request): User | null {
     const sql = "select id, name from sessions where hash = ?";
-    return cloud.db.query(sql).get(Cloud.hash(Cloud.token(req))) as User | null;
+    const user = cloud.db.query(sql).get(Cloud.hash(Cloud.token(req))) as User | null;
+    if (user !== null || config.USER === "") {
+      return user;
+    }
+    // the local fork's one user: a visitor with no session (the server
+    // binds 127.0.0.1), made once
+    return Billing.here(cloud, config.USER);
   }
 
   // one signed in somewhere, by id

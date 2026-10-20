@@ -42,11 +42,18 @@ AskAI.ts (model calls and the cache).
 Run it
 ------
 
-You need [Bun](https://bun.sh) and an Anthropic API key (or an OpenAI
-one, below).
+You need [Bun](https://bun.sh) and a z.ai key: your GLM Coding Plan
+subscription's, or one from the API console
+(z.ai/manage-apikey/apikey-list).
 
-    export ANTHROPIC_API_KEY=sk-ant-...
+    export ZAI_API_KEY=...
     bun Server.ts                    # http://127.0.0.1:8788, data in ~/.unii
+
+The server offers z.ai's GLM models by default, and every call (the
+chat, its summaries, its agents) runs on `glm-5.3` — not the Flash
+variant, though `glm-5.3-flash` is offered too, for a cheaper pick or
+compactor. GLM thinks of its own accord behind z.ai's
+Anthropic-compatible API, and its web searches run on z.ai's side.
 
 Then open http://127.0.0.1:8788 and type your email. With no mail key
 set, the server prints the sign-in link in its output: open it. Or chat
@@ -77,13 +84,13 @@ also be set as the variable `UNII_<KEY>`:
 - `site`: the server's origin, for sign-in links (default
   http://127.0.0.1:8788). Another port: `UNII_SITE=http://127.0.0.1:9000
   bun Server.ts 9000`.
-- `vendors`: what the server offers, comma-separated: `claude-api`
-  (default), `openai-api`.
+- `vendors`: what the server offers, comma-separated: `zai-api`
+  (default), `claude-api`, `openai-api`.
 - `models`: the models offered, by label (Pick.ts; default all).
 - `pick`: what a chat runs on until it picks another,
-  `vendor:model:effort:speed` (default `claude-api:sonnet-5.5:medium:slow`).
+  vendor:model:effort:speed (default `zai-api:glm-5.3:medium:slow`).
 - `compactor`: what writes the summaries (default
-  `claude-api:haiku-5.5:high:slow`).
+  `zai-api:glm-5.3:low:slow`).
 - `agents`: what subagents run on (default: the chat's pick).
 - `work`: the agents' working dirs on each device (default
   ~/.unii/work).
@@ -94,12 +101,15 @@ also be set as the variable `UNII_<KEY>`:
   honors its `x-unii-worker` header (Server.ts explains).
 - `apple`, `apns`: the iOS app's App ID and push key id (ios/).
 
-Keys are read from the environment: `ANTHROPIC_API_KEY`,
+Keys are read from the environment: `ZAI_API_KEY`, `ANTHROPIC_API_KEY`,
 `OPENAI_API_KEY`, `RESEND_API_KEY` (to email sign-in links; none: they
 print), `APNS_KEY`.
 
-With only an OpenAI key, set `vendors`, `pick` and `compactor` to
-`openai-api` models, e.g. `UNII_VENDORS=openai-api
+With an Anthropic key instead, set `vendors`, `pick` and `compactor` to
+`claude-api` models, e.g. `UNII_VENDORS=claude-api
+UNII_PICK=claude-api:sonnet-5.5:medium:slow
+UNII_COMPACTOR=claude-api:haiku-5.5:high:slow`. With only an OpenAI
+key, set them to `openai-api` models, e.g. `UNII_VENDORS=openai-api
 UNII_PICK=openai-api:gpt-6.1-sol:medium:slow
 UNII_COMPACTOR=openai-api:gpt-6-luna:high:slow`.
 

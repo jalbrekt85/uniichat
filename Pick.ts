@@ -35,7 +35,7 @@ export type Offer = { vendors: Vendor[]; models: string[] };
 // Constants
 // =========
 
-export const VENDORS: Vendor[] = ["claude-api", "openai-api"];
+export const VENDORS: Vendor[] = ["claude-api", "openai-api", "zai-api"];
 
 const OPUS  : Model = { label: "opus-5.5",   id: "claude-opus-5-5",   speeds: ["slow", "fast"] };
 const SONNET: Model = { label: "sonnet-5.5", id: "claude-sonnet-5-5", speeds: ["slow"] };
@@ -45,11 +45,16 @@ const OPENAI: Model[] = [
   { label: "gpt-6.1-sol", id: "gpt-6.1-sol", speeds: ["slow", "fast"] },
   { label: "gpt-6-astra", id: "gpt-6-astra", speeds: ["slow", "fast", "ultrafast"] },
 ];
+const GLM: Model[] = [
+  { label: "glm-5.3",     id: "glm-5.3",     speeds: ["slow"] },
+  { label: "glm-5.3-flash", id: "glm-5.3-flash", speeds: ["slow"] },
+];
 
 // each vendor's models, at the speeds it runs them
 const MODELS: Record<Vendor, Model[]> = {
   "claude-api": [OPUS, SONNET, HAIKU],
   "openai-api": OPENAI,
+  "zai-api"   : GLM,
 };
 
 export const EFFORTS = ["low", "medium", "high", "xhigh", "max"];

@@ -21,18 +21,18 @@ const FILE: Record<string, string> = fs.existsSync(PATH) ? JSON.parse(fs.readFil
 
 export const SITE    = config_get("site", "http://127.0.0.1:8788").replace(/\/$/, "");
 export const OFFER: Offer = {
-  vendors : config_vendors(config_get("vendors", "claude-api")),
+  vendors : config_vendors(config_get("vendors", "zai-api")),
   models  : config_get("models", LABELS.join()).split(",").map((m) => m.trim()),
 };
 
 export const WORK       = config_path(config_get("work", DIR + "/work"));
 export const RULES      = config_path(config_get("rules", ""));
 export const AFTER      = config_get("after", "");
-export const PICK       = config_run("pick", config_get("pick", "claude-api:sonnet-5.5:medium:slow"));
+export const PICK       = config_run("pick", config_get("pick", "zai-api:glm-5.3:medium:slow"));
 
 // what every compaction runs on, a chat's and an import's alike, whatever
 // the chat's pick
-export const COMPACTOR  = config_run("compactor", config_get("compactor", "claude-api:haiku-5.5:high:slow"));
+export const COMPACTOR  = config_run("compactor", config_get("compactor", "zai-api:glm-5.3:low:slow"));
 export const AGENTS     = config_get("agents", "") ? config_run("agents", config_get("agents", "")) : null;
 export const WORKERS    = Number(config_get("workers", "0"));
 
@@ -46,6 +46,7 @@ export const APNS       = config_get("apns", "");
 const VARS: Record<string, string> = {
   anthropic       : "ANTHROPIC_API_KEY",
   openai          : "OPENAI_API_KEY",
+  zai             : "ZAI_API_KEY",
   resend          : "RESEND_API_KEY",
   apns            : "APNS_KEY",
 };

@@ -37,6 +37,7 @@ process.env.UNII_DIR = DIR;
 // in it, not in the environment
 const config = await import("./Config.ts");
 config.KEYS.anthropic = "test";
+config.KEYS.zai      = "test"; // the compactor's default vendor (zai-api)
 
 const { AskAI } = await import("./AskAI.ts");
 const { Memory } = await import("./Memory.ts");

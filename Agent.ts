@@ -1,7 +1,7 @@
 // Agent
 // =====
-// claude-api and openai-api in Unii's own loop; a Wire (Anthropic.ts,
-// OpenAI.ts) shapes requests and reads streams. Each step sends every
+// claude-api, zai-api and openai-api in Unii's own loop; a Wire
+// (Anthropic.ts, Zai.ts, OpenAI.ts) shapes requests and reads streams. Each step sends every
 // item and streams one output; tool calls run in order, a message sent
 // mid-run follows the next results, and the call ends at a step with no
 // tools and nothing sent. A request goes again, TRIES times at most,
@@ -34,6 +34,7 @@
 import { AskAI, type Grant, type Cost, type Ask, type Block, type Flight, type Try, type End, type Event, type Img, type Kind, type Say } from "./AskAI.ts";
 import { Anthropic } from "./Anthropic.ts";
 import { OpenAI } from "./OpenAI.ts";
+import { Zai } from "./Zai.ts";
 import { Price, type Usage } from "./Price.ts";
 import { live_push } from "./View.ts";
 import { Machine, type Spec } from "./Machine.ts";
@@ -151,6 +152,8 @@ export namespace Agent {
       try {
         if (ask.vendor === "claude-api") {
           await Agent.loop(Anthropic.wire, run);
+        } else if (ask.vendor === "zai-api") {
+          await Agent.loop(Zai.wire, run);
         } else {
           await Agent.loop(OpenAI.wire, run);
         }

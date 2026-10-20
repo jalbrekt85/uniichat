@@ -38,7 +38,7 @@ import type { Usage } from "./Price.ts";
 // result, a note from before the chat (imported)
 export type Kind = "user" | "work" | "mind" | "unii" | "tool" | "echo" | "note";
 
-export type Vendor = "claude-api" | "openai-api";
+export type Vendor = "claude-api" | "openai-api" | "zai-api";
 
 // an image: its mime type, its bytes in base64
 export type Img = { type: string; data: string };
@@ -143,6 +143,7 @@ const AGAIN = 60e3;
 export const TTL: Record<Vendor, number> = {
   "claude-api" : 300e3,
   "openai-api" : 1800e3,
+  "zai-api"    : 300e3,
 };
 
 // the prefixes cached, by key (AskAI.keys)

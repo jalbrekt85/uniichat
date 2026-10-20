@@ -22,6 +22,7 @@ process.env.UNII_DIR = DIR;
 // a process reads Config once (maybe for another test)
 const config = await import("./Config.ts");
 config.KEYS.anthropic = "test";
+config.KEYS.zai      = "test"; // the compactor's default vendor (zai-api)
 
 const { Agent } = await import("./Agent.ts");
 const { AskAI } = await import("./AskAI.ts");

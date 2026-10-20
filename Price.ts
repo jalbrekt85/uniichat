@@ -26,6 +26,8 @@ const RATES: Record<string, Rate> = {
   "gpt-6-astra"       : { input: 10,  write: 12.5, read: 1,    output: 50  },
   "gpt-6.1-sol"       : { input: 2,   write: 2,    read: 0.1,  output: 10  },
   "gpt-6-luna"        : { input: 0.1, write: 0.1,  read: 0.01, output: 0.5 },
+  "glm-5.3"           : { input: 1.4, write: 1.75, read: 0.26, output: 4.4 },
+  "glm-5.3-flash"     : { input: 0.15, write: 0.1875, read: 0.03, output: 0.5 },
 };
 
 // a prompt (its input, cache writes and reads) over PROMPT tokens costs a

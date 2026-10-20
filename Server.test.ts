@@ -61,6 +61,8 @@ const TURN = `
 const { Chat } = await import(${JSON.stringify(import.meta.dir + "/Server.ts")});
 const { AskAI } = await import(${JSON.stringify(import.meta.dir + "/AskAI.ts")});
 const { Cloud } = await import(${JSON.stringify(import.meta.dir + "/Cloud.ts")});
+const { Pick } = await import(${JSON.stringify(import.meta.dir + "/Pick.ts")});
+const config = await import(${JSON.stringify(import.meta.dir + "/Config.ts")});
 Chat.cloud = Cloud.open(() => {}, () => {}, async () => null);
 const chat = Chat.open({ id: "u1", name: "a@b.c" });
 AskAI.ask = (ask, on) => AskAI.tie(on, ask.bill, () => {}, () => {})[0];
@@ -68,7 +70,8 @@ Chat.take(chat, Chat.push(chat, null, "user", "hi"));
 await Bun.sleep(10);
 const model = chat.pick.model;
 const waited = Chat.waits(chat);
-const to = { ...chat.pick, model: model === "opus-5.5" ? "haiku-5.5" : "opus-5.5" };
+const other = Pick.models(config.OFFER.vendors, config.OFFER.models).map(([, m]) => m.label).find((m) => m !== model) ?? model;
+const to = { ...chat.pick, model: other };
 const acted = await Chat.act(chat, "pick", { $: "pick", to }, "");
 console.log(JSON.stringify({ model, waited, acted, picked: chat.pick.model, to: to.model, after: Chat.waits(chat) }));
 process.exit(0);

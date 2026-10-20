@@ -37,7 +37,7 @@ export const PICK       = config_run("pick", config_get("pick", "zai-api:glm-5.3
 
 // what every compaction runs on, a chat's and an import's alike, whatever
 // the chat's pick
-export const COMPACTOR  = config_run("compactor", config_get("compactor", "zai-api:glm-5.3:low:slow"));
+export const COMPACTOR  = config_run("compactor", config_get("compactor", "zai-api:glm-5.3-flash:low:slow"));
 export const AGENTS     = config_get("agents", "") ? config_run("agents", config_get("agents", "")) : null;
 export const WORKERS    = Number(config_get("workers", "0"));
 

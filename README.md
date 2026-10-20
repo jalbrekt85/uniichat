@@ -94,7 +94,7 @@ also be set as the variable `UNII_<KEY>`:
   vendor:model:effort:speed (default `zai-api:glm-5.3:max:slow`; z.ai
   ignores the effort: GLM thinks as it sees fit).
 - `compactor`: what writes the summaries (default
-  `zai-api:glm-5.3:low:slow`).
+  `zai-api:glm-5.3-flash:low:slow`: the cheaper GLM, background only).
 - `agents`: what subagents run on (default: the chat's pick).
 - `work`: the agents' working dirs on each device (default
   ~/.unii/work).

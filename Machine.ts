@@ -63,7 +63,7 @@ export const TOOLS: Spec[] = [
   spec("shell", "Run a command with the device's shell ($SHELL -c), stdout and stderr together, and return its output, then its exit code and time, as (exit 0 in 0.4 s); output past " + CAP + " characters keeps its head and tail. Each call is a new shell. The call waits until the command and everything holding its output end, so give background jobs their own output file. Background jobs live only while unii is open on the device: closing it kills every process the calls started.", { command: STR }, ["command"]),
   spec("read", "Read a text file. offset: the first line to show (from 1); limit: how many lines; at: the character of the first line to start from. It ends saying the lines shown, as [lines 4-7 of 15]; output past " + CAP + " characters comes in pages, saying where to go on.", { path: STR, offset: INT, limit: INT, at: INT }, ["path"]),
   spec("write", "Write a whole file, making its directories. Answers a unified diff of what changed (a new file: all its lines added).", { path: STR, content: STR }, ["path", "content"]),
-  spec("edit", "Replace text in files: the edits in order, each on its file as the edits before it left it. old must match exactly, whitespace included, and only once, unless all is true, which replaces every match. If any edit fails, no file is changed. Answers a unified diff of each file.", { edits: { type: "array", items: EDIT, minItems: 1 } }, ["edits"]),
+  spec("edit", "Replace text in files: the edits in order, each an object with its own path, old and new, on its file as the edits before it left it. old must match exactly, whitespace included, and only once, unless all is true, which replaces every match. If any edit fails, no file is changed. Answers a unified diff of each file.", { edits: { type: "array", items: EDIT, minItems: 1 } }, ["edits"]),
 ];
 
 // the tool of a computer task, bound to its device: Anthropic's computer
@@ -273,13 +273,17 @@ export namespace Machine {
     const list  = Array.isArray(edits) ? edits : [];
     const files = new Map<string, { shown: string; was: string; text: string }>();
     for (const [k, e] of list.entries()) {
+      if (String(e?.path ?? "") === "") {
+        return { text: "Edit " + (k + 1) + ": no path given. Every edit is {path, old, new}: send the same edits with path set.", fail: true };
+      }
       const file  = path.resolve(cwd, String(e?.path));
       const known = files.get(file);
       const was   = known?.was ?? (fs.existsSync(file) ? fs.readFileSync(file, "utf8") : null);
       const text  = known?.text ?? was ?? "";
       const old   = String(e?.old ?? "");
       const count = old === "" ? 0 : text.split(old).length - 1;
-      const why   = was === null ? "no such file" : count === 0 ? "old was not found" : count > 1 && e.all !== true ? "old matches " + count + " times; give more context, or all" : "";
+      const near  = old !== "" && text.includes(old.trim());
+      const why   = was === null ? "no such file" : count === 0 ? near ? "old was found only with different whitespace: copy the file's text exactly" : "old was not found: copy the file's text exactly, whitespace included" : count > 1 && e.all !== true ? "old matches " + count + " times; give more context, or all" : "";
       if (why !== "") {
         return { text: "Edit " + (k + 1) + " (" + e?.path + "): " + why + ". No file was changed.", fail: true };
       }

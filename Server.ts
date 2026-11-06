@@ -46,6 +46,7 @@ import { Pick } from "./Pick.ts";
 import { Price } from "./Price.ts";
 import { MASTER, SEARCHES, Tools, type Agent, type Live, type Moved as Kit } from "./Tools.ts";
 import { email_ask, FRAME, IMAGES, live_push, MOVE, PING, QUIT, SUMMARIES, TICK, TURN, WIRE, type Answer, type Part, type Server as Out, type Wait } from "./View.ts";
+import { Watchdog, type Dog } from "./Watchdog.ts";
 import * as config from "./Config.ts";
 import hello_md from "./hello.md" with { type: "text" };
 import app_js from "./web/app.js" with { type: "file" };
@@ -92,8 +93,9 @@ type Batch = Kept & { micros: number[][]; open: number[]; left: number; all: num
 // running (Chat.check); sent, wait: messages given and waiting; ending:
 // what to do once at rest as it ends (all: nothing runs) or moves (no
 // post runs); writes, held: the posts logging, one after another, and
-// the logging held meanwhile (null: none); wallet: what pays its calls
-type Chat = {
+// the logging held meanwhile (null: none); wallet: what pays its calls;
+// dog: the watchdog's (Watchdog.ts)
+export type Chat = {
   acct  : Account;
   mem   : Memory;
   tools : Tools;
@@ -110,6 +112,7 @@ type Chat = {
   sent  : Msg[];
   wait  : Msg[];
   halt  : AbortController;
+  dog   : Dog;
   live  : Live[];
   calls : Record<string, string>; // its tool calls awaiting their results, by id (Chat.on)
   eye   : Eye;
@@ -296,7 +299,7 @@ export namespace Chat {
     const pick = Pick.load(mem.pick, config.OFFER, config.PICK);
     const chat: Chat = {
       acct, mem, tools, pick, socks: new Set(), acts: new Map(), busy: false, posts: 1, call: null, model: "", check: null, asked: false, open: 0, sent: [], wait: [],
-      halt: new AbortController(), live: [], calls: {}, eye: { parts: [], from: 0 }, after: Promise.resolve(), batch: null, ending: null,
+      halt: new AbortController(), dog: Watchdog.dog(), live: [], calls: {}, eye: { parts: [], from: 0 }, after: Promise.resolve(), batch: null, ending: null,
       writes: Promise.resolve(), held: null, wallet,
     };
     // a saved pick not offered gave way: told once
@@ -513,8 +516,9 @@ export namespace Chat {
       }
       chat.call = null;
       chat.sent = [];
-      chat.wait = [];
+      chat.wait = chat.mem.failed === null ? [] : chat.wait; // a terminal refusal holds the queue for the user's retry
       chat.busy = false;
+      Watchdog.turn_end(chat);
       Chat.live(chat, null, []);
       Chat.phone(chat);
       Chat.after(chat);
@@ -571,6 +575,10 @@ export namespace Chat {
     chat.wait.unshift(...chat.sent.slice(chat.sent.length - end.left.length));
     if (!end.ok && !halt.signal.aborted) {
       Chat.failed(chat, end.text);
+    }
+    if (!end.ok && end.stop === "terminal" && !halt.signal.aborted) {
+      chat.mem.failed = end.text; // the vendor refuses every call: stop summaries too, keep the queue
+      return false;
     }
     if (end.note) {
       Chat.all(chat, { $: "note", text: end.note });
@@ -659,6 +667,9 @@ export namespace Chat {
       at.calls[ev.of] = ev.text;
     } else if (ev.kind === "mind") {
       Chat.all(chat, { $: "entry", agent: name, kind: ev.kind, text: ev.text });
+      if (agent === null && config.WATCHDOG !== null) {
+        Watchdog.mind(chat, ev.text);
+      }
     } else if (ev.kind !== "user") {
       const call = ev.of === undefined ? undefined : at.calls[ev.of];
       delete at.calls[ev.of ?? ""];
@@ -1075,7 +1086,8 @@ export namespace Chat {
     if (chat.call !== null) {
       return chat.asked ? chat.model : "";
     }
-    const summing = chat.busy && chat.wait.length > 0 && Memory.first(chat.mem) < Chat.from(chat);
+    // the length check first: from() reads the queue's head
+    const summing = chat.busy && chat.wait.length > 0 && chat.mem.failed === null && chat.mem.calls.size > 0 && Memory.first(chat.mem) < Chat.from(chat);
     return summing ? SUMMARIES : "";
   }
 
@@ -1298,6 +1310,8 @@ export namespace Chat {
       }
       switch (msg.$) {
         case "say": {
+          chat.mem.failed = null; // the user acting again retries a refused summary — here, once, before the pages log
+          Memory.pump(chat.mem);
           return await Chat.say(chat, id, msg.sizes.split(",").filter(Boolean).map(Number), body);
         }
         case "import": {

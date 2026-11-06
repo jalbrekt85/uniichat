@@ -29,3 +29,29 @@ test("a call's MCP requests follow its chat past a process that ended", async ()
   expect(await (await ask()).text()).toBe("c /" + tools.key + "/main");
   c.stop(true);
 });
+
+test("a device tool names where it runs: a missing or unknown name resends, a closed device ends the turn", async () => {
+  const tools = Tools.serve({} as any, {} as any);
+  const name = Tools.attach(tools, "tab", "Mac", "who", { send: () => {}, live: () => true, computer: false, work: "~" });
+  const signal = new AbortController().signal;
+  // no device field: a malformed call, named as such (was "No device
+  // undefined ... end your turn", which ate mid-flight writes)
+  const none = await Tools.call(tools, "main", "write", { path: "a", content: "b" }, signal, "j1");
+  expect(none).toMatchObject({ fail: true });
+  expect(none.text).toContain("no device field");
+  expect(none.text).toContain("Mac");
+  expect(none.text).not.toContain("end your turn");
+  // unknown name: resend with a listed one
+  const odd = await Tools.call(tools, "main", "write", { device: "Nope", path: "a", content: "b" }, signal, "j2");
+  expect(odd.text).toContain("No device \"Nope\"");
+  expect(odd.text).toContain("Resend with device set to one of them");
+  expect(odd.text).not.toContain("end your turn");
+  // the device's unii closed: the one case end-your-turn is true for
+  Tools.detach(tools, "tab", name);
+  const shut = Tools.open(tools, name, false);
+  expect(typeof shut).toBe("string");
+  expect(shut as string).toContain("end your turn");
+  // open again: named right, it runs
+  expect(Tools.attach(tools, "tab2", name, "who", { send: () => {}, live: () => true, computer: false, work: "~" })).toBe(name);
+  expect(typeof Tools.open(tools, name, false)).toBe("object");
+});

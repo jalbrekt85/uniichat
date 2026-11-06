@@ -372,11 +372,17 @@ export namespace Tools {
         if (role?.$ === "hands") {
           return Tools.job(tools, role.device, { name, input: args, cwd: who }, signal, id);
         }
-        return Tools.computer(tools, String(args.device), String(args.task));
+        if (typeof args.device !== "string" || args.device === "") {
+          return { text: Tools.device_missing(tools), fail: true };
+        }
+        return Tools.computer(tools, args.device, String(args.task));
       }
       default: {
         const { device, ...input } = args;
-        return Tools.job(tools, String(device), { name, input, cwd: who }, signal, id);
+        if (typeof device !== "string" || device === "") {
+          return { text: Tools.device_missing(tools), fail: true };
+        }
+        return Tools.job(tools, device, { name, input, cwd: who }, signal, id);
       }
     }
   }
@@ -423,14 +429,24 @@ export namespace Tools {
     return [...tools.devices].filter(([, d]) => d.terms.size > 0);
   }
 
-  // else why not
+  // why a call with no device field fails: a malformed call the model
+  // fixes by resending with one, not a closed device
+  export function device_missing(tools: Tools): string {
+    const names = Tools.opened(tools).map(([name]) => name).join(", ") || "none";
+    return "Your call had no device field. Devices open now: " + names + ". Resend with device set to one of them.";
+  }
+
+  // else why not: no such device (a resend with a listed one fixes it),
+  // or the device's unii closed (only the user opens one, so a retry in
+  // a loop only keeps the chat busy: end the turn instead)
   export function open(tools: Tools, device: string, computer: boolean): Device | string {
     const d = tools.devices.get(device);
     const open = Tools.opened(tools).map(([name]) => name).join(", ") || "none";
-    if (d === undefined || d.terms.size === 0) {
-      // only the user opens one, so a retry in a loop only keeps the chat
-      // busy: stop and say so instead
-      return "No device " + device + " is open (unii isn't running there). Open: " + open + ". Only the user opens it, so don't retry or wait: end your turn, saying what is left.";
+    if (d === undefined) {
+      return "No device \"" + device + "\". Devices open now: " + open + ". Resend with device set to one of them.";
+    }
+    if (d.terms.size === 0) {
+      return "No unii is running on " + device + " right now. Only the user opens it, so don't retry or wait: end your turn, saying what is left.";
     }
     if (computer && !Tools.hands(d)) {
       return device + " does no computer use (its unii runs without UNII_COMPUTER=1).";

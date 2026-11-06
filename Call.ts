@@ -44,7 +44,7 @@ const READS = new Map<string, (x: Input) => Shown>([
   ["shell",    (x) => ({ head: String(x.command ?? ""), blocks: [] })],
   ["read",     (x) => ({ head: String(x.path ?? "") + lines_show(x.offset, x.limit), blocks: [] })],
   ["write",    (x) => ({ head: String(x.path ?? ""), blocks: [] })],
-  ["edit",     (x) => (Array.isArray(x.edits) ? { head: edits_files(x.edits), blocks: [] } : input_shown(x))],
+  ["edit",     (x) => (Array.isArray(x.edits) ? { head: edit_files(x), blocks: [] } : input_shown(x))],
   ["zoom",     (x) => ({ head: msg_show(x.id, x.n) + (x.at === undefined ? "" : " from char " + x.at), blocks: [] })],
   ["date",     (x) => ({ head: msg_show(x.id, 1), blocks: [] })],
   ["spawn",    (x) => ({ head: tasks_show(x.tasks, x.effort), blocks: (Array.isArray(x.tasks) ? x.tasks : []).flatMap(text_block) })],
@@ -138,9 +138,13 @@ function lines_show(offset: unknown, limit: unknown): string {
   return offset === undefined && limit === undefined ? "" : ":" + from + "-" + to;
 }
 
-// the files an edit's list names, each once
-function edits_files(edits: unknown[]): string {
-  const paths = edits.map((e: any) => e?.path).filter((p) => typeof p === "string");
+// the files an edit names: the top-level path, then each edit's own
+function edit_files(x: Input): string {
+  const edits = Array.isArray(x.edits) ? x.edits : [];
+  const paths = edits.map((e: any) => e?.path).filter((p: unknown): p is string => typeof p === "string");
+  if (typeof x.path === "string" && !paths.includes(x.path)) {
+    paths.unshift(x.path);
+  }
   return [...new Set(paths)].join(", ");
 }
 

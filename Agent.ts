@@ -19,13 +19,14 @@
 // last is done, never each try (a storm logged ~600 lines a second).
 // A call ends answered
 // (`fail`: the model's answer failed, a refusal or a stop reason: its
-// input's doing) or not: `down`, the vendor's (a refusal of the request,
-// as when the API key's credit is gone, or busy past TRIES); `lost`,
-// ours (a stop, its payer's refusal or cut), saying why. A vendor's why
-// (`busy`, `down`) goes to the log; the user reads only that the AI
-// service is busy, as the call's end, each retry's thought and where a
-// call is cut (a vendor's errors speak of the server's account, not the
-// user's). A stop ends the call at once; a paid one's
+// input's doing) or not: `terminal`, the vendor's (billing, auth, an
+// invalid request: the request refused for good — asked again, it fails
+// alike); `down`, the vendor's (busy past TRIES); `lost`, ours (a stop,
+// its payer's refusal or cut), saying why. A vendor's why (`busy`,
+// `down`, `terminal`) reaches the chat whole — the exact status and
+// message, in each retry's thought and in the call's end (a self-hosted
+// server acts on them; nothing is swallowed). A stop ends the call at
+// once; a paid one's
 // request is read on to its end, out of sight, and billed whole (a
 // stream cut short is billed what it read: Agent.used), a free one's is
 // cut. A paid request is booked first (worst, Bill: AskAI.ts), then takes
@@ -84,7 +85,7 @@ export type Step = {
   out     : unknown[];
   uses    : Use[];
   entries : Entry[];
-  stop    : "done" | "tools" | "again" | "busy" | "down" | "lost" | "fail";
+  stop    : "done" | "tools" | "again" | "busy" | "down" | "lost" | "fail" | "terminal";
   why     : string;
   note    : string;
 };
@@ -182,8 +183,8 @@ export namespace Agent {
       for (const entry of step.entries) {
         on({ $: "Entry", ...entry });
       }
-      if (step.stop === "down" || step.stop === "lost" || step.stop === "fail") {
-        end.text ||= step.stop === "down" ? BUSY : step.why;
+      if (step.stop === "down" || step.stop === "lost" || step.stop === "fail" || step.stop === "terminal") {
+        end.text ||= step.why || BUSY; // the vendor's words, always: nothing is swallowed
         end.stop = step.stop;
         return;
       }
@@ -249,8 +250,11 @@ export namespace Agent {
           return Agent.fail("stopped", seen);
         }
         const { res, step } = got;
-        if (step.stop === "down") {
+        if (step.stop === "down" || step.stop === "terminal") {
           console.error(model + ": " + step.why.slice(0, 300));
+        }
+        if (step.stop === "terminal") {
+          return step; // the vendor refused for good: asking again fails alike
         }
         if (step.stop !== "busy" || k >= TRIES) {
           return step.stop === "busy" ? { ...step, stop: "down" } : step;
@@ -264,7 +268,7 @@ export namespace Agent {
         }
         const after = Number(res?.headers.get("retry-after") ?? "");
         const wait = after > 0 ? after : 2 ** k;
-        run.on({ $: "Entry", kind: "mind", text: "The AI service is busy: asking again in " + wait + " s." });
+        run.on({ $: "Entry", kind: "mind", text: "The AI service is busy (" + step.why + "): asking again in " + wait + " s." });
         await Machine.nap(wait * 1000, signal);
       }
       return Agent.fail("stopped", []);
@@ -372,8 +376,11 @@ export namespace Agent {
         signal  : run.ask.bill ? idle.signal : AbortSignal.any([run.abort.signal, idle.signal]),
         timeout : false,
       } as RequestInit);
-      const why = res.ok && res.body ? "" : "HTTP " + res.status + ": " + Agent.reason(await res.text());
-      step = why ? Agent.fail(why, [], Agent.passing(res) ? "busy" : "down") : await Agent.stream(wire, run, res.body!, timer, seen, st, flight.begun, read);
+      const text = res.ok && res.body ? "" : await res.text();
+      const why = text === "" ? "" : "HTTP " + res.status + ": " + Agent.reason(text);
+      step = why === ""
+        ? await Agent.stream(wire, run, res.body!, timer, seen, st, flight.begun, read)
+        : Agent.fail(why, [], Agent.terminal(res, text) ? "terminal" : Agent.passing(res) ? "busy" : "down");
     } catch (err: any) {
       step = Agent.fail(err.message, [], "busy");
     }
@@ -407,6 +414,31 @@ export namespace Agent {
     } catch {
       return body.slice(0, 2000);
     }
+  }
+
+  // whether the response is a terminal refusal. For 429s, z.ai's codes
+  // (docs.z.ai/api-reference/api-code) split by what waiting can do:
+  // the entitlement walls — no balance (1113), usage windows measured in
+  // hours or days (1308, 1310, 1316-1321, their reset time in the
+  // message), expired or absent plans (1309, 1314), models the plan
+  // lacks (1311), fair-use holds (1313), wrong-product keys (1315) —
+  // never clear in seconds, so one request, the words surfaced. The
+  // rate limits (1302, 1305, any code unlisted) clear in seconds or
+  // minutes: they back off. A terminal code wins over a stray
+  // x-should-retry: true. Auth (1000-1005: 401) and invalid requests
+  // (1210-1222, 1261, 1301: 400/403/404) are terminal by status alone
+  export function terminal(res: Response, body: string): boolean {
+    const code = (() => {
+      try {
+        return String(JSON.parse(body)?.error?.code ?? "");
+      } catch {
+        return "";
+      }
+    })();
+    if (res.status === 429) {
+      return ["1113", "1308", "1309", "1310", "1311", "1313", "1314", "1315", "1316", "1317", "1318", "1319", "1320", "1321"].includes(code);
+    }
+    return res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 409;
   }
 
   export function passing(res: Response): boolean {
@@ -445,7 +477,7 @@ export namespace Agent {
   }
 
   export function fail(why: string, seen: Entry[], stop: Step["stop"] = "lost"): Step {
-    const mark = "\n[cut off: " + (stop === "busy" ? BUSY : why).slice(0, 300) + "]";
+    const mark = "\n[cut off: " + why.slice(0, 300) + "]";
     const entries = seen.filter((e) => e.text.trim()).map((e) => ({ kind: e.kind, text: e.text.trim() + mark }));
     return { out: [], uses: [], entries, stop, why, note: "" };
   }

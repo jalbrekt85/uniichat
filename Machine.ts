@@ -57,13 +57,13 @@ const CONTEXT = 3;
 export const STR = { type: "string" };
 export const INT = { type: "integer" };
 
-const EDIT = { type: "object", properties: { path: STR, old: STR, new: STR, all: { type: "boolean" } }, required: ["path", "old", "new"] };
+const EDIT = { type: "object", properties: { path: STR, old: STR, new: STR, all: { type: "boolean" } }, required: ["old", "new"] };
 
 export const TOOLS: Spec[] = [
   spec("shell", "Run a command with the device's shell ($SHELL -c), stdout and stderr together, and return its output, then its exit code and time, as (exit 0 in 0.4 s); output past " + CAP + " characters keeps its head and tail. Each call is a new shell. The call waits until the command and everything holding its output end, so give background jobs their own output file. Background jobs live only while unii is open on the device: closing it kills every process the calls started.", { command: STR }, ["command"]),
   spec("read", "Read a text file. offset: the first line to show (from 1); limit: how many lines; at: the character of the first line to start from. It ends saying the lines shown, as [lines 4-7 of 15]; output past " + CAP + " characters comes in pages, saying where to go on.", { path: STR, offset: INT, limit: INT, at: INT }, ["path"]),
   spec("write", "Write a whole file, making its directories. Answers a unified diff of what changed (a new file: all its lines added).", { path: STR, content: STR }, ["path", "content"]),
-  spec("edit", "Replace text in files: the edits in order, each an object with its own path, old and new, on its file as the edits before it left it. old must match exactly, whitespace included, and only once, unless all is true, which replaces every match. If any edit fails, no file is changed. Answers a unified diff of each file.", { edits: { type: "array", items: EDIT, minItems: 1 } }, ["edits"]),
+  spec("edit", "Replace text in files: the edits in order, each an object with old and new, applied on its file as the edits before it left it. Each edit may carry path; one without it edits the file of the edit before it — name the file on the first edit, or as the top-level path, and the rest may omit it. old must match exactly, whitespace included, and only once, unless all is true, which replaces every match. If any edit fails, no file is changed. Answers a unified diff of each file.", { path: STR, edits: { type: "array", items: EDIT, minItems: 1 } }, ["edits"]),
 ];
 
 // the tool of a computer task, bound to its device: Anthropic's computer
@@ -139,7 +139,7 @@ export namespace Machine {
           return Machine.write(file, String(input.path), String(input.content));
         }
         case "edit": {
-          return Machine.edit(cwd, input.edits);
+          return Machine.edit(cwd, input.edits, input.path);
         }
         case "computer": {
           return await Computer.act(input, signal);
@@ -265,18 +265,25 @@ export namespace Machine {
     return { text: text_diff(shown, was, content), fail: false };
   }
 
-  // the edits, in order, each on its file as the ones before left it;
-  // every file is written only once all of them apply, so a failed one
-  // changes none. Each file, named as its first edit gives it, answers
-  // its diff
-  export function edit(cwd: string, edits: unknown): Out {
+  // the edits, in order, each on its file as the ones before left it: an
+  // edit names its file with path, or omits path to stay on the previous
+  // edit's file — the shape a batch on one file reaches for (the path
+  // once, at the top or on the first edit); every file is written only
+  // once all of them apply, so a failed one changes none. Each file,
+  // named as first given, answers its diff
+  export function edit(cwd: string, edits: unknown, at: unknown): Out {
     const list  = Array.isArray(edits) ? edits : [];
     const files = new Map<string, { shown: string; was: string; text: string }>();
+    let last = typeof at === "string" ? at : "";
     for (const [k, e] of list.entries()) {
-      if (String(e?.path ?? "") === "") {
-        return { text: "Edit " + (k + 1) + ": no path given. Every edit is {path, old, new}: send the same edits with path set.", fail: true };
+      const given = typeof e?.path === "string" ? e.path : "";
+      if (given !== "") {
+        last = given;
       }
-      const file  = path.resolve(cwd, String(e?.path));
+      if (last === "") {
+        return { text: "Edit " + (k + 1) + ": no path given. Name the file on the first edit (path), or as the top-level path; the later edits may omit it to keep editing that file.", fail: true };
+      }
+      const file  = path.resolve(cwd, last);
       const known = files.get(file);
       const was   = known?.was ?? (fs.existsSync(file) ? fs.readFileSync(file, "utf8") : null);
       const text  = known?.text ?? was ?? "";
@@ -285,12 +292,12 @@ export namespace Machine {
       const near  = old !== "" && text.includes(old.trim());
       const why   = was === null ? "no such file" : count === 0 ? near ? "old was found only with different whitespace: copy the file's text exactly" : "old was not found: copy the file's text exactly, whitespace included" : count > 1 && e.all !== true ? "old matches " + count + " times; give more context, or all" : "";
       if (why !== "") {
-        return { text: "Edit " + (k + 1) + " (" + e?.path + "): " + why + ". No file was changed.", fail: true };
+        return { text: "Edit " + (k + 1) + " (" + last + "): " + why + ". No file was changed.", fail: true };
       }
-      files.set(file, { shown: known?.shown ?? String(e.path), was: was!, text: text.split(old).join(String(e.new)) });
+      files.set(file, { shown: known?.shown ?? last, was: was!, text: text.split(old).join(String(e.new)) });
     }
     if (files.size === 0) {
-      return { text: "edits is empty: give a list of {path, old, new}.", fail: true };
+      return { text: "edits is empty: give a list of {old, new}, with the file named by path.", fail: true };
     }
     for (const [file, f] of files) {
       fs.writeFileSync(file, f.text);

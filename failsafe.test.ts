@@ -26,12 +26,16 @@ config.KEYS.zai      = "test"; // the compactor's default vendor (zai-api)
 
 const { Agent } = await import("./Agent.ts");
 const { AskAI } = await import("./AskAI.ts");
+const { Cloud } = await import("./Cloud.ts");
 const { Memory } = await import("./Memory.ts");
 const { MASTER } = await import("./Tools.ts");
+const { Chat } = await import("./Server.ts");
 
 const SHARE = { vendor: "claude-api" as const, model: "claude-opus-5-5", effort: "medium", speed: "slow", system: MASTER, searches: 1, server: "" };
 
-const BROKE = "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.";
+const OUT   = "upstream provider error: try again later";
+const NOBAL = "[1113][Insufficient balance or no resource package. Please recharge.]";
+const NOKEY = "invalid api key";
 const LIMIT = "This request would exceed your organization's rate limit of 80,000 output tokens per minute.";
 const BUSY  = "the AI service is busy or unavailable right now";
 const SHORT = "not enough credit";
@@ -45,11 +49,18 @@ const MSGS    = Array.from({ length: COUNT }, (_, k) => ({ kind: "unii" as const
 const real = { setTimeout, fetch, error: console.error };
 const logged: string[] = [];
 
-// the vendor: out of credit, or rate limited (`limited` requests more),
-// or answering
-let broke = true;
+// the vendor: an outage (503), rate limited (`limited` requests more), a
+// terminal refusal (`terminal`: z.ai's no-balance 429/1113; `auth`: a
+// bad key), or answering; `asked` counts every inference request
+let outage = true;
 let limited = 0;
 let refused = 0;
+let terminal = false;
+let auth = false;
+let quota = 0; // 429/1302 rate-limit refusals, then answers
+let over = 0; // 429/1305 overloads, then answers
+let wall = ""; // a 429 entitlement-wall code (1308, 1309, 1316...)
+let asked = 0;
 
 // a streamed answer: its text, how it stopped
 function answer(text: string, stop: string): Response {
@@ -65,15 +76,40 @@ function answer(text: string, stop: string): Response {
 }
 
 async function vendor(_url: string, init: any): Promise<Response> {
-  const content = JSON.parse(init.body).messages[0].content;
+  const body = JSON.parse(init.body);
+  if (body.method !== undefined) {
+    // this process's own MCP tools server (Tools.base), not the vendor
+    return Response.json({ jsonrpc: "2.0", id: body.id, result: { tools: [] } });
+  }
+  const content = body.messages[0].content;
   const task: string = content[content.length - 1].text;
-  if (broke) {
-    refused += 1;
-    return Response.json({ type: "error", error: { type: "invalid_request_error", message: BROKE } }, { status: 400 });
+  asked += 1;
+  if (terminal) {
+    return Response.json({ type: "error", error: { type: "rate_limit_error", code: "1113", message: NOBAL } }, { status: 429 });
+  }
+  if (auth) {
+    return Response.json({ type: "error", error: { type: "authentication_error", message: NOKEY } }, { status: 401 });
   }
   if (limited > 0) {
     limited -= 1;
     return Response.json({ type: "error", error: { type: "rate_limit_error", message: LIMIT } }, { status: 429, headers: { "retry-after": "1" } });
+  }
+  if (quota > 0) {
+    quota -= 1;
+    return Response.json({ type: "error", error: { type: "rate_limit_error", code: "1302", message: "[1302][Rate limit reached for requests]" } }, { status: 429 });
+  }
+  if (over > 0) {
+    over -= 1;
+    return Response.json({ type: "error", error: { type: "rate_limit_error", code: "1305", message: "[1305][The service may be temporarily overloaded, please try again later]" } }, { status: 429 });
+  }
+  if (wall !== "") {
+    const code = wall;
+    wall = "";
+    return Response.json({ type: "error", error: { type: "rate_limit_error", code, message: "[" + code + "][Usage limit reached for 5 hour. Your limit will reset at 2026-11-01 11:45:21]" } }, { status: 429 });
+  }
+  if (outage) {
+    refused += 1;
+    return Response.json({ type: "error", error: { type: "api_error", message: OUT } }, { status: 503 });
   }
   const leaf = /compress message (\d+)/.exec(task)?.[1];
   return leaf === String(REFUSED) ? answer("", "refusal") : answer("line for " + task.split("\n")[0], "end_turn");
@@ -95,8 +131,11 @@ function nodes(mem: any): Array<[{ l: number; i: number }, string | null]> {
 }
 
 // once the vendor answers: the tree completes by itself, each node the
-// model's line but the refused one, clipped
+// model's line but the refused one, clipped. A side failed by the outage
+// (Memory.failed) builds once it is cleared — the user's next action
 async function completes(mem: any): Promise<void> {
+  mem.failed = null;
+  Memory.pump(mem);
   for (let t = 0; t < 100 && nodes(mem).some(([, text]) => text === null); t++) {
     await sleep(50);
   }
@@ -129,13 +168,149 @@ test("an outage delays summaries, never clips them; a refusal clips", () => fast
   expect(refused).toBeGreaterThan(2 * COUNT);
   expect(nodes(mem).filter(([, text]) => text !== null)).toEqual([]);
   expect(logged.filter((line) => line.includes("clipped"))).toEqual([]);
-  expect(logged.some((line) => line.includes(BROKE.slice(0, 40)))).toBe(true);
+  expect(logged.some((line) => line.includes(OUT.slice(0, 40)))).toBe(true);
 
   const turn = await AskAI.ask({ ...SHARE, blocks: [{ text: "hi", mark: true }] }, () => {}).done;
-  expect(turn).toMatchObject({ ok: false, stop: "down", text: BUSY });
+  expect(turn).toMatchObject({ ok: false, stop: "down", text: "HTTP 503: " + OUT }); // the vendor's words, not BUSY
+  expect(mem.failed).toContain(OUT); // the summaries' side stopped: nothing asks on
+  const had = refused;
+  await sleep(100);
+  expect(refused).toBe(had);
 
-  broke = false;
+  outage = false;
   await completes(mem);
+}));
+
+test("a terminal 429/1113 is asked once and surfaced, never BUSY", () => fast(async () => {
+  asked = 0;
+  terminal = true;
+  const minds: string[] = [];
+  const on = (ev: any) => ev.kind === "mind" && minds.push(ev.text);
+  const end = await AskAI.ask({ ...SHARE, blocks: [{ text: "hi", mark: true }] }, on).done;
+  expect(end).toMatchObject({ ok: false, stop: "terminal" });
+  expect(end.text).toContain("1113");
+  expect(end.text).toContain("Insufficient balance");
+  expect(minds).toEqual([]); // no "asking again" thoughts
+  expect(asked).toBe(1); // the vendor called once
+  terminal = false;
+}));
+
+test("auth 401 is terminal and surfaced", () => fast(async () => {
+  asked = 0;
+  auth = true;
+  const end = await AskAI.ask({ ...SHARE, blocks: [{ text: "hi", mark: true }] }, () => {}).done;
+  expect(end).toMatchObject({ ok: false, stop: "terminal" });
+  expect(end.text).toContain("401");
+  expect(end.text).toContain(NOKEY);
+  expect(asked).toBe(1);
+  auth = false;
+}));
+
+test("a 1308 usage limit (a 5-hour wall) is terminal: one request, surfaced with the reset time", () => fast(async () => {
+  asked = 0;
+  wall = "1308";
+  const minds: string[] = [];
+  const on = (ev: any) => ev.kind === "mind" && minds.push(ev.text);
+  const end = await AskAI.ask({ ...SHARE, blocks: [{ text: "hi", mark: true }] }, on).done;
+  expect(end).toMatchObject({ ok: false, stop: "terminal" });
+  expect(end.text).toContain("1308");
+  expect(end.text).toContain("Usage limit reached for 5 hour");
+  expect(end.text).toContain("2026-11-01 11:45:21");
+  expect(minds).toEqual([]); // no backoff: the wall outlasts every try
+  expect(asked).toBe(1);
+  wall = "";
+}));
+
+test("the other entitlement walls (1309 plan expired, 1316 hours limit) are terminal like 1308", () => fast(async () => {
+  for (const code of ["1309", "1316"]) {
+    asked = 0;
+    wall = code;
+    const end = await AskAI.ask({ ...SHARE, blocks: [{ text: "hi", mark: true }] }, () => {}).done;
+    expect(end).toMatchObject({ ok: false, stop: "terminal" });
+    expect(end.text).toContain(code);
+    expect(asked).toBe(1); // one request: renewing is the user's act, not retrying
+  }
+  wall = "";
+}));
+
+test("a 1305 overload is transient: it backs off and succeeds", () => fast(async () => {
+  asked = 0;
+  over = 2;
+  const end = await AskAI.ask({ ...SHARE, blocks: [{ text: "hi", mark: true }] }, () => {}).done;
+  expect(end.ok).toBe(true);
+  expect(asked).toBe(3);
+  over = 0;
+}));
+
+test("a terminal refusal ends summaries: settle says why, no node asks again", () => fast(async () => {
+  asked = 0;
+  terminal = true;
+  const mem = Memory.load(DIR + "/terminal", () => SHARE);
+  Memory.push(mem, MSGS);
+  const signal = new AbortController().signal;
+  const told = await Promise.race([Memory.settle(mem, mem.count, signal), sleep(300).then(() => "still waiting")]);
+  expect(typeof told).toBe("string");
+  expect(told as string).toContain("1113");
+  expect(mem.failed).toContain("1113");
+  expect(mem.busy.size).toBe(0);
+  expect(asked).toBe(COUNT); // one call a node, none retried
+  await sleep(200);
+  expect(asked).toBe(COUNT); // pump starts no job while failed
+  expect(await Memory.settle(mem, mem.count, signal)).toBe(mem.failed);
+  // the user acts: the summaries build
+  mem.failed = null;
+  terminal = false;
+  Memory.pump(mem);
+  for (let t = 0; t < 100 && nodes(mem).some(([, text]) => text === null); t++) {
+    await sleep(50);
+  }
+  expect(nodes(mem).every(([, text]) => text !== null)).toBe(true);
+  Memory.stop(mem);
+}));
+
+test("a message over a dead vendor's summary backlog ends with the vendor's words, never hangs", () => fast(async () => {
+  Chat.cloud = Cloud.open(() => {}, () => {}, async () => null);
+  asked = 0;
+  terminal = true;
+  const chat = Chat.open({ id: "u1", name: "a@b.c" })!;
+  chat.socks.add({ send: () => {}, close: () => {}, data: { seen: new Set() } } as any); // a view holds the chat open (one nobody views is let go)
+  await sleep(20);
+  // the state the user was in: a backlog of summaries that each asked
+  // once and failed terminal, the side failed
+  Memory.push(chat.mem, MSGS);
+  await sleep(300);
+  expect(chat.mem.failed).toContain("1113");
+  expect(asked).toBe(COUNT); // one call a node, none retried
+  // a message over that backlog: the act boundary (Chat.post case "say")
+  // clears the refused side and pumps its queue once — or the turn hangs
+  // forever on summaries nobody builds. Each say below is one act.
+  const say = (text: string) => {
+    chat.mem.failed = null;
+    Memory.pump(chat.mem);
+    Chat.take(chat, Chat.push(chat, null, "user", text));
+  };
+  say("hello");
+  await sleep(300);
+  expect(chat.busy).toBe(false); // no hang: the turn ended
+  const note = Memory.message(chat.mem, chat.mem.count - 1)!;
+  expect(note.kind).toBe("note");
+  expect(note.text).toContain("1113");
+  expect(note.text).toContain("Insufficient balance"); // the vendor's words, not BUSY
+  expect(chat.mem.failed).toContain("1113");
+  const after = asked;
+  expect(after).toBeGreaterThan(COUNT); // the backlog was asked anew, once, not for ever
+  // again: fails fast the same way
+  say("again");
+  await sleep(300);
+  expect(chat.busy).toBe(false);
+  expect(asked).toBeGreaterThan(after);
+  expect(Memory.message(chat.mem, chat.mem.count - 1)!.text).toContain("1113");
+  // the account fixed, the next message answers
+  terminal = false;
+  say("go");
+  await sleep(400);
+  expect(Memory.message(chat.mem, chat.mem.count - 1)!.kind).toBe("unii");
+  await Chat.end(chat);
 }));
 
 // the payer as Billing.ts book: out of credit, it holds the side
@@ -218,8 +393,27 @@ test("a rate limit's retries say BUSY; the vendor's words go to the log", () => 
   const on = (ev: any) => ev.kind === "mind" && minds.push(ev.text);
   const turn = await AskAI.ask({ ...SHARE, blocks: [{ text: "hi", mark: true }] }, on).done;
   expect(turn.ok).toBe(true);
-  expect(minds).toEqual(["The AI service is busy: asking again in 1 s.", "The AI service is busy: asking again in 1 s."]);
+  expect(minds).toEqual([
+    "The AI service is busy (HTTP 429: " + LIMIT + "): asking again in 1 s.",
+    "The AI service is busy (HTTP 429: " + LIMIT + "): asking again in 1 s.",
+  ]);
   expect(logged).toEqual([SHARE.model + ": HTTP 429: " + LIMIT + ": its requests ask again", SHARE.model + ": none asks again"]);
+}));
+
+test("a 1302 rate limit is transient: it backs off and succeeds", () => fast(async () => {
+  asked = 0;
+  quota = 3;
+  const minds: string[] = [];
+  const on = (ev: any) => ev.kind === "mind" && minds.push(ev.text);
+  const end = await AskAI.ask({ ...SHARE, blocks: [{ text: "hi", mark: true }] }, on).done;
+  expect(end.ok).toBe(true);
+  expect(asked).toBe(4);
+  expect(minds).toEqual([
+    "The AI service is busy (HTTP 429: [1302][Rate limit reached for requests]): asking again in 2 s.",
+    "The AI service is busy (HTTP 429: [1302][Rate limit reached for requests]): asking again in 4 s.",
+    "The AI service is busy (HTTP 429: [1302][Rate limit reached for requests]): asking again in 8 s.",
+  ]);
+  quota = 0;
 }));
 
 // two imports at a rate-limited model, one running 4 requests, the other

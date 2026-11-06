@@ -10,9 +10,10 @@
 // compaction writes it: a call like a turn, on the config's COMPACTOR,
 // with the same system prompt (`share`, Server.ts), no tools, and its
 // own view (`seen`) up to the node's `ctx`; a line too long is asked
-// anew (build). The call asks till it is answered (AskAI patient: an
-// outage only delays a node, never harms it); answered with no line (a
-// refusal: its input's doing), its node is its source clipped. Every
+// anew (build). The call asks as a turn's does — the loop's exponential
+// tries, then the side fails till the user acts (`fail`, the turn told
+// why, `settle`); answered with no line (a refusal: its input's doing),
+// its node is its source clipped. Every
 // node builds so, an imported one too; the import's are a side of their
 // own (`side`: the chat's turns don't wait on them). A side is held as
 // the user's credit says (its payer refusing a call holds it:
@@ -107,7 +108,9 @@ type Saved = Kept & { seen?: Kept; main: End; tree: End; pick: object | null; go
 // each log is indexed; busy: nodes building, by slot, with their side;
 // sides: the side by the last message of nodes not built; calls: those
 // building's calls; hold: why each side is held (null: it builds);
-// wait: checks run as the views change; share: what
+// failed: why no summary can build now (a terminal vendor error), till
+// the user acts again (Server.ts Chat.take); wait: checks run as the
+// views change; share: what
 // compactions share with the chat's turns; pay: what pays them (none:
 // free); made, acted: told of each node built, of each act indexed
 export type Memory = {
@@ -128,6 +131,7 @@ export type Memory = {
   sides  : Map<number, number>;
   calls  : Map<Call, Sum>;
   hold   : Array<string | null>;
+  failed : string | null;
   done   : boolean;
   wait   : Set<() => void>;
   share  : () => Share;
@@ -189,6 +193,12 @@ of them from there too.
 <input>
 `;
 
+// a summary's call the vendor will not answer now — a terminal refusal,
+// or busy past its tries (AskAI.ts): its side stops building, the turn
+// told why (Memory.fail, Memory.settle), until the user acts again
+// (Server.ts Chat.take)
+export class Terminal extends Error {}
+
 // Memory
 // ======
 
@@ -198,7 +208,7 @@ export namespace Memory {
     const mem: Memory = {
       dir, fds: new Map(), count: 0, open: 0, pick: null, goal: null, work: [], nodes: new Map(), agents: new Map(), ready: [[], []], ends: { main: [0, 0], tree: [0, 0] },
       view: { parts: [], size: 0, batch: false, high: HIGH }, seen: { parts: [], size: 0, batch: false, high: SEEN },
-      busy: new Map(), sides: new Map(), calls: new Map(), hold: [null, "paused"], done: false, wait: new Set(), share, acted,
+      busy: new Map(), sides: new Map(), calls: new Map(), hold: [null, "paused"], failed: null, done: false, wait: new Set(), share, acted,
     };
     const saved = Memory.saved(dir);
     mem.pick = saved?.pick ?? null;
@@ -631,6 +641,9 @@ export namespace Memory {
   // whose source fits
   export function starts(mem: Memory): Array<Part & { text: string }> {
     const free: Array<Part & { text: string }> = [];
+    if (mem.failed !== null) {
+      return free; // a terminal refusal: no summary asks till the user acts
+    }
     for (const side of [0, 1].filter((side) => mem.hold[side] === null)) {
       const end = Memory.first(mem, JOBS - 1, side);
       const next: Part[] = [];
@@ -683,12 +696,17 @@ export namespace Memory {
   export function job(mem: Memory, l: number, i: number, text: string, call: Call | null = null): void {
     const key = Memory.slot(l, i);
     mem.busy.set(key, Memory.side(mem, l, i));
-    Memory.build(mem, l, i, text, call).finally(() => {
+    Memory.build(mem, l, i, text, call).catch((err) => {
+      // a terminal refusal fails the side before the pump below asks its
+      // next node the same thing
+      if (err instanceof Terminal) {
+        Memory.fail(mem, err.message);
+      }
+      console.error("compactor: node " + l + "/" + i + ": " + (err?.message ?? err));
+    }).finally(() => {
       mem.busy.delete(key);
       Memory.pump(mem);
       Memory.fit(mem);
-    }).catch((err) => {
-      console.error("compactor: node " + l + "/" + i + ": " + (err?.message ?? err));
     });
   }
 
@@ -746,7 +764,7 @@ export namespace Memory {
       end = await Memory.compact(mem, l, i, Memory.ask(mem, l, i, text, [...blocks, note]));
     }
     if (lines.length === 0 && !end.ok && end.stop !== "fail") {
-      throw new Error(end.text);
+      throw end.stop === "terminal" || end.stop === "down" ? new Terminal(end.text) : new Error(end.text);
     }
     if (lines.length === 0) {
       console.error("compactor: node " + l + "/" + i + ": " + (end.ok ? "an empty line" : end.text) + "; clipped");
@@ -786,7 +804,7 @@ export namespace Memory {
   // a call of node (l,i)'s summary, on the compactor
   export function ask(mem: Memory, l: number, i: number, text: string, blocks: Block[]): Call {
     const bill = Memory.bill(mem, l, i, text);
-    return AskAI.ask({ ...mem.share(), ...Pick.ask(config.COMPACTOR), blocks, bill, patient: true, yields: Memory.served(mem, l, i) === "import" ? mem.dir : undefined }, () => {});
+    return AskAI.ask({ ...mem.share(), ...Pick.ask(config.COMPACTOR), blocks, bill, yields: Memory.served(mem, l, i) === "import" ? mem.dir : undefined }, () => {});
   }
 
   // a summary's try: its call's end, the call held in `calls` till then
@@ -955,15 +973,29 @@ ${Memory.cut(line)}| ← LIMIT`;
     return { parts: view.filter((part) => part !== null), size, gone };
   }
 
+  // the summaries cannot build: the vendor refused for good (Memory.job,
+  // a Terminal). Recorded once, the waiters told (settle answers why),
+  // and no new job starts (starts), till the user acts again (Server.ts
+  // Chat.take)
+  export function fail(mem: Memory, message: string): void {
+    if (mem.failed !== null) {
+      return;
+    }
+    mem.failed = message;
+    [...mem.wait].forEach((check) => check());
+    Memory.pump(mem);
+  }
+
   // once the chat's messages before `end` are built (not an import's):
-  // null; else why they won't be: "Stopped." (signal aborted), or why
-  // their side is held (no credit for them: Billing.ts book), so no
-  // turn or agent waits on summaries no call is building
+  // null; else why they won't be: "Stopped." (signal aborted), a terminal
+  // vendor error (failed), or why their side is held (no credit for them:
+  // Billing.ts book), so no turn or agent waits on summaries no call is
+  // building
   export function settle(mem: Memory, end: number, signal: AbortSignal): Promise<string | null> {
     return new Promise((resolve) => {
       const check = () => {
         const built = Memory.first(mem) >= end;
-        const why = signal.aborted ? "Stopped." : built ? null : mem.hold[0];
+        const why = signal.aborted ? "Stopped." : built ? null : (mem.failed ?? mem.hold[0]);
         if (built || why !== null) {
           mem.wait.delete(check);
           signal.removeEventListener("abort", check);

@@ -39,6 +39,19 @@ export const PICK       = config_run("pick", config_get("pick", "zai-api:glm-5.3
 // the chat's pick
 export const COMPACTOR  = config_run("compactor", config_get("compactor", "zai-api:glm-5.3-flash:low:slow"));
 export const AGENTS     = config_get("agents", "") ? config_run("agents", config_get("agents", "")) : null;
+
+// what reads the agent's thoughts for the least-resistance habit and
+// calls it out (Watchdog.ts). THE TOGGLE, one token in config.json:
+// "watchdog": false (or "") turns it off; true or the pick turns it on
+const WATCH: any = config_get("watchdog", "zai-api:glm-5.3-flash:low:slow");
+const WATCH_OFF = WATCH === false || WATCH === "" || WATCH === "false" || WATCH === "off" || WATCH === "0";
+const WATCH_ON_DEFAULT = WATCH === true || WATCH === "true";
+export const WATCHDOG   = WATCH_OFF ? null : config_run("watchdog", WATCH_ON_DEFAULT ? "zai-api:glm-5.3-flash:low:slow" : String(WATCH));
+
+// the watchdog's debug (Watchdog.ts): true: each thought it holds, each
+// check and its answer, each report, logged to the server's window and
+// <dir>/watchdog.log
+export const WATCHDOG_DEBUG = config_get("watchdog_debug", "") !== "";
 export const WORKERS    = Number(config_get("workers", "0"));
 
 // the iOS app (ios/, Cloud.ts): its App ID, the team's then the bundle's

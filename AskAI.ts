@@ -4,13 +4,13 @@
 // Deltas (live pieces) and an Entry per finished message out. send()
 // hands the agent a message at its next chance, stop() aborts, `left`
 // holds those never taken. Every vendor is an API run in our loop
-// (Agent.ts). A patient call (a summary's) asks again, AGAIN after each
-// try nothing answered (the vendor down or refusing it, as when the API
-// key's credit is gone; our setup failing), till
-// one is answered or we end it (a stop; its payer's refusal: its node
-// then waits for the user's credit, with no call: Memory.ts `hold`): an
-// outage only delays it, and no summary is made of a failure that isn't
-// its input's (Memory.ts). A call that yields (an import's summary,
+// (Agent.ts), whose backoff is the one strategy: a summary asks again
+// with the turns' exponential tries and then stops, a terminal refusal
+// at once — the side then waits for the user's next action (Memory.ts
+// `failed`), its payer's refusal holds it with no call (Memory.ts
+// `hold`). No summary asks for ever, and no summary is made of a
+// failure that isn't its input's (Memory.ts). A call that yields (an
+// import's summary,
 // naming its import) sends nothing while one that doesn't waits on its
 // busy model, nor while another of its import's does (Agent.ts). A
 // call's events, payments and end go to its sink, which moves with its
@@ -26,7 +26,6 @@
 
 import { Agent } from "./Agent.ts";
 import { stream_lines } from "./Clip.ts";
-import { Machine } from "./Machine.ts";
 import type { Pick } from "./Pick.ts";
 import type { Usage } from "./Price.ts";
 
@@ -50,8 +49,8 @@ export type Say = { text: string; imgs: Img[] };
 export type Block = { text: string; mark: boolean };
 
 // what a paid call serves: the chat's turn, a summary (the chat's, an
-// import's), a recording, an agent, a computer-use agent
-export type Served = "chat" | "compactor" | "import" | "voice" | "agent" | "computer";
+// import's), a recording, an agent, a computer-use agent, a watchdog check
+export type Served = "chat" | "compactor" | "import" | "voice" | "agent" | "computer" | "watchdog";
 
 // a paid request let through: the most tokens it may write, why it
 // failed should it write them all (null: the model's cap, no failure),
@@ -90,7 +89,6 @@ export type Ask = Pick & {
   searches  : number;
   server    : string;
   bill?     : Bill;
-  patient?  : boolean;
   yields?   : string;
 };
 
@@ -114,7 +112,7 @@ export type End = {
   text  : string;
   left  : Say[];
   note? : string;
-  stop? : "fail" | "lost" | "down";
+  stop? : "fail" | "lost" | "down" | "terminal";
 };
 
 // one try at a vendor
@@ -134,11 +132,6 @@ export type Call = Try & { move: (to: Sink) => void };
 // Constants
 // =========
 
-// how long a patient call waits to ask again: short enough that summaries
-// go on within a minute of an outage's end, long enough not to flood the
-// vendor meanwhile (its JOBS a side per chat each asking once a minute)
-const AGAIN = 60e3;
-
 // how long a vendor keeps a cache entry unused, in ms
 export const TTL: Record<Vendor, number> = {
   "claude-api" : 300e3,
@@ -156,31 +149,12 @@ export namespace AskAI {
 
   // a call: its tries, one after another (a patient one's)
   export function ask(ask: Ask, on: (ev: Event) => void): Call {
-    const halt = new AbortController();
     const send = (say: Say) => call.send(say);
-    const stop = () => {
-      halt.abort();
-      call.stop();
-    };
+    const stop = () => call.stop();
     const [out, feed] = AskAI.tie(on, ask.bill, send, stop);
     const tie = { ...ask, bill: feed.bill };
-    let call = AskAI.start(tie, feed.on);
-    const run = async (): Promise<End> => {
-      let end = await call.done;
-      for (;;) {
-        const wait = ask.patient === true && !end.ok && end.stop !== "fail" && end.stop !== "lost";
-        if (wait) {
-          await Machine.nap(AGAIN, halt.signal);
-        }
-        if (halt.signal.aborted || !wait) {
-          return end;
-        }
-        call = AskAI.start(tie, feed.on);
-        end.left.forEach(send);
-        end = await call.done;
-      }
-    };
-    run().then(feed.end, (err) => feed.end(AskAI.end(String(err?.message ?? err))));
+    const call = AskAI.start(tie, feed.on);
+    call.done.then(feed.end, (err) => feed.end(AskAI.end(String(err?.message ?? err))));
     return out;
   }
 

@@ -95,6 +95,12 @@ also be set as the variable `UNII_<KEY>`:
   ignores the effort: GLM thinks as it sees fit).
 - `compactor`: what writes the summaries (default
   `zai-api:glm-5.3-flash:low:slow`: the cheaper GLM, background only).
+- `watchdog`: what reads the agent's thoughts as it works and, catching
+  a fix that fails one of its tests, calls on it to stop and talk the
+  root cause over with the user. The toggle is one token: `false` off,
+  `true` on (the default model, glm-5.3-flash), or a full pick.
+- `watchdog_debug`: `"1"`: the watchdog logs each thought it checks and
+  what it answers to `<dir>/watchdog.log` (and the server's window).
 - `agents`: what subagents run on (default: the chat's pick).
 - `work`: the agents' working dirs on each device (default
   ~/.unii/work).

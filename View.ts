@@ -253,6 +253,7 @@ const SERVED: Record<string, string[]> = {
   voice     : ["voice note", "voice notes"],
   agent     : ["agent step", "agent steps"],
   computer  : ["computer step", "computer steps"],
+  watchdog  : ["watchdog check", "watchdog checks"],
   earlier   : ["earlier use", "earlier uses"],
 };
 

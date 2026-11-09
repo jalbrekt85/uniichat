@@ -246,7 +246,12 @@ export namespace Tools {
   }
 
   export function system(head: string): string {
-    return head + "\n\n" + Tools.rules();
+    // the watchdog compliance note rides only while the watchdog is on:
+    // when off, no call carries any watchdog text
+    const dog = config.WATCHDOG === null
+      ? ""
+      : "\n\nA watchdog reads your thoughts as you work. Its report reaches you as a message starting \"[Watchdog]\", between your tool calls or as a new turn. When it stops you, make no more tool calls: end your turn and discuss with the user the foundational solution the whole repository wants, then let them choose the scope.";
+    return head + dog + "\n\n" + Tools.rules();
   }
 
   export function devices(tools: Tools): Block {

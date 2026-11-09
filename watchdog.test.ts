@@ -8,7 +8,8 @@
 // reports nothing; thoughts under Watchdog's MIN batch till the turn's
 // end; one report a turn; a turn without thoughts asks nothing; a
 // check's reply is capped by its bill and wrapped input, and one that
-// fails keeps its batch. A check runs on the master's prompt, as a
+// fails keeps its batch. A check runs its own judge prompt (the master
+// prompt carries no watchdog text), as a
 // compaction does, told by its task's "Watchdog:" mark (a report, too
 // long for a node, asks a compaction call of its own).
 
@@ -50,7 +51,7 @@ const out: any = {};
   await Bun.sleep(20);
   const ask = check()!.ask;
   out.bad = {
-    master: ask.system === turn().ask.system,
+    judge: ask.system.startsWith("You judge the private thoughts"),
     model: ask.model,
     task: ask.blocks[0].text.includes("rewrite the parser properly"),
     thought: ask.blocks[0].text.includes("patch the caller with a try/catch"),
@@ -171,7 +172,7 @@ test("the watchdog reads a turn's thoughts and calls out the least-resistance ha
   const out = JSON.parse((await new Response(proc.stdout).text()).trim().split("\n").at(-1) ?? "{}");
   // BAD: asked of the task and the thought, on the flash pick; the
   // report reaches the running call and the log; no second check
-  expect(out.bad).toMatchObject({ master: true, model: "glm-5.3-flash", task: true, thought: true, report: true, logged: "work", dogs: 1 });
+  expect(out.bad).toMatchObject({ judge: true, model: "glm-5.3-flash", task: true, thought: true, report: true, logged: "work", dogs: 1 });
   expect(out.ok).toEqual({ dogs: 1, report: 0, calls: 2 });
   expect(out.under).toEqual({ dogs: 0, flushed: 1, both: true });
   expect(out.once).toEqual({ report: 1, dogs: 1 });

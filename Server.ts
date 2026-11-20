@@ -1932,7 +1932,7 @@ export namespace Main {
     return {
       site: config.SITE,
       user: config.USER,
-      pick: config.PICK,
+      pick: chat?.pick ?? config.PICK,
       compactor: config.COMPACTOR,
       modelServer: Local.server(),
       session: chat?.session ?? null,

@@ -92,6 +92,7 @@ const P = {
   bottom: 0,
   user  : 0,
   y     : 0,
+  away  : 0,
   toast : 0,
   found : new Map<string, Read>(),
   done  : {} as Import.Done,
@@ -359,6 +360,7 @@ function chat(): void {
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     scrollTo({ top: document.documentElement.scrollHeight, behavior: reduce ? "auto" : "smooth" });
     P.end = true;
+    P.away = 0;
     $("#jump").hidden = true;
   };
   // A neuron click asks the server for exactly that range: one zoom, which
@@ -396,13 +398,24 @@ function jump_update(): void {
   const near = innerHeight + scrollY >= document.documentElement.scrollHeight - 24;
   // a scroll up (a scrollbar drag too, which fires no wheel) leaves the
   // bottom; the page's own scroll down never does
-  const up = scrollY < P.y - 2;
+  const dy = P.y - scrollY;
+  const up = dy > 2;
   P.y = scrollY;
+  // how far the reader has gone from the bottom, so a nudge does not
+  // offer "Latest": about two seconds of steady scrolling must pass first
+  if (near) {
+    P.away = 0;
+  } else if (dy > 0) {
+    P.away += dy;
+  } else {
+    P.away = Math.max(0, P.away + dy);
+  }
+  const far = !near && P.away >= Math.max(800, innerHeight * 1.5);
   // a reader who scrolled up stays where they are, however much has
   // streamed since: only the page's own scroll to the bottom gets the grace
   const at = near || (!user && !up && recent);
   P.end = at;
-  const hidden = at || document.body.classList.contains("account") || $("#palette").hidden === false || document.querySelector(".gallery") !== null;
+  const hidden = !far || document.body.classList.contains("account") || $("#palette").hidden === false || document.querySelector(".gallery") !== null;
   jump.hidden = hidden;
 }
 

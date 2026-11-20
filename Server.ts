@@ -49,7 +49,7 @@ import * as Import from "./Import.ts";
 import { Local } from "./Local.ts";
 import { JOBS, Memory, type Given, type Msg as Log, type Share } from "./Memory.ts";
 import { OpenAI, TRANSCRIBER } from "./OpenAI.ts";
-import { Pick } from "./Pick.ts";
+import { Pick, EFFORTS } from "./Pick.ts";
 import { Price } from "./Price.ts";
 import { Sessions } from "./Sessions.ts";
 import { MASTER, SEARCHES, Tools, type Agent, type Live, type Moved as Kit } from "./Tools.ts";
@@ -352,7 +352,7 @@ export namespace Chat {
       told  : () => Chat.all(chat, Chat.state(chat)),
       rest  : () => Chat.free(chat),
     });
-    const pick = config.PICK;
+    const pick = mem.effort === null ? config.PICK : { ...config.PICK, effort: mem.effort };
     const chat: Chat = {
       acct, mem, session: sid, key, work: folder, titled: false, tools, pick, socks: new Set(), acts: new Map(), busy: false, resume: false, continues: 0, generating: false, posts: 1, call: null, model: "", check: null, asked: false, open: 0, sent: [], wait: [],
       halt: new AbortController(), dog: Watchdog.dog(), live: [], calls: {}, toolAt: new Map(), echoAt: new Map(), eye: { parts: [], from: 0 }, after: Promise.resolve(), batch: null, ending: null,
@@ -1694,7 +1694,15 @@ export namespace Chat {
         return { usd: Import.import_usd(chat.mem.count, sizes.split(",").map(Number)) };
       }
       case "pick": {
-        // the models are fixed (Models.ts): there is no picker to move
+        // the model is fixed (models.json): only the thinking level moves
+        const effort = String(msg.to?.effort ?? "");
+        if (!EFFORTS.includes(effort)) {
+          return { error: "No thinking level " + JSON.stringify(effort) + "." };
+        }
+        chat.pick = { ...chat.pick, effort };
+        chat.mem.effort = effort;
+        Memory.save(chat.mem);
+        Chat.change(chat);
         return {};
       }
       case "out": {

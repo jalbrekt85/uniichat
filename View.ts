@@ -565,8 +565,16 @@ export function view_running(v: View): boolean {
 }
 
 export function view_pick(v: View): Knob[] {
-  // the models are fixed (Models.ts): there is no picker, so no knobs
-  return [];
+  // the model is fixed (models.json); the thinking level is the chat's
+  if (v.pick === null) {
+    return [];
+  }
+  const effort = v.pick.effort;
+  return [{
+    text: effort,
+    move: "effort",
+    hint: "thinking: " + effort + " — click the next level (low, medium, high, xhigh, max)",
+  }];
 }
 
 export function view_count(v: View): number {

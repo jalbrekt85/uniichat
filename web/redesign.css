@@ -765,7 +765,7 @@ body.account .col-resize, body.fx-open .col-resize, body.palette-open .col-resiz
   --serif: "Geist Mono VF", ui-monospace, "SF Mono", Menlo, monospace;
   --brand: "Geist Mono VF", ui-monospace, "SF Mono", Menlo, monospace;
   --mono: "Geist Mono VF", ui-monospace, "SF Mono", Menlo, monospace;
-  --msg-size: 14.5px;
+  --msg-size: 15.5px;
   --fs-2xs: 9px;
   --fs-xs: 10px;
   --fs-sm: 11px;
@@ -778,7 +778,7 @@ body.account .col-resize, body.fx-open .col-resize, body.palette-open .col-resiz
   --fs-tool: calc(var(--msg-size) - 3px);
   --fs-code: calc(var(--msg-size) - 2.5px);
   --fs-diff: calc(var(--msg-size) - 3px);
-  --fs-think: calc(var(--msg-size) - 2.5px);
+  --fs-think: calc(var(--msg-size) - 3.5px);
   --fs-title: clamp(34px, 4.6vw, 56px);
   --fs-h1: clamp(30px, 3.8vw, 44px);
   --fs-h2: clamp(22px, 2.6vw, 32px);
@@ -864,7 +864,7 @@ header .menu svg { width: 18px; height: 18px; }
 .msg .call .on { font-size: 8.5px; }
 .msg .ic { font-size: 12px; }
 .cap { font-size: calc(var(--msg-size) - 2.5px); line-height: 1.6; letter-spacing: -.012em; }
-.block { font-size: calc(var(--msg-size) - 1px); line-height: 1.55; }
+.block { font-size: var(--fs-tool); line-height: 1.55; }
 .block .lv { font-size: 8.5px; }
 .open > .fold { font-size: 10px; }
 .more > summary { font-size: 10px; }
@@ -941,7 +941,7 @@ header .menu svg { width: 18px; height: 18px; }
 .g-muted { font-size: 9.5px; }
 
 @media (max-width: 600px) {
-  :root { --msg-size: 14px; --fs-title: 34px; }
+  :root { --msg-size: 15px; --fs-title: 34px; }
   .msg { font-size: var(--msg-size); }
   .msg.user { font-size: calc(var(--msg-size) - .5px); }
   .msg h1 { font-size: 1.5em; }
@@ -2892,7 +2892,7 @@ body {
    headers and condensed copy by one modest step. No family or colour
    changes. */
 :root {
-  --msg-size: 16.5px;
+  --msg-size: 15.5px;
   --fs-2xs: 10px;
   --fs-xs: 11px;
   --fs-sm: 12px;

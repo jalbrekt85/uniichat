@@ -5,7 +5,7 @@
     "speed": "slow"
   },
   "compactor": {
-    "model": "glm-5.3-flash",
+    "model": "Qwen3-4B-Instruct-2507-4bit",
     "effort": "low",
     "speed": "slow"
   }

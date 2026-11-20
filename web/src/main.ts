@@ -90,6 +90,8 @@ const P = {
   frame : 0,
   rows  : true,
   bottom: 0,
+  user  : 0,
+  y     : 0,
   toast : 0,
   found : new Map<string, Read>(),
   done  : {} as Import.Done,
@@ -348,6 +350,11 @@ function chat(): void {
   // a phone's keyboard up or down: the bottom stays in sight, if at it
   visualViewport!.onresize = () => draw(true);
   document.onscroll = () => jump_update();
+  // a reader's own scroll is not the page's: a wheel, a touch, a key or a
+  // scrollbar drag is what leaves the bottom, not the reply growing
+  for (const ev of ["wheel", "touchstart", "touchmove", "keydown", "mousedown"]) {
+    addEventListener(ev, () => (P.user = performance.now()), { passive: true });
+  }
   $("#jump").onclick = () => {
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     scrollTo({ top: document.documentElement.scrollHeight, behavior: reduce ? "auto" : "smooth" });
@@ -385,7 +392,15 @@ function jump_update(): void {
     return;
   }
   const recent = performance.now() - P.bottom < 160;
-  const at = recent || innerHeight + scrollY >= document.documentElement.scrollHeight - 24;
+  const user = performance.now() - P.user < 400;
+  const near = innerHeight + scrollY >= document.documentElement.scrollHeight - 24;
+  // a scroll up (a scrollbar drag too, which fires no wheel) leaves the
+  // bottom; the page's own scroll down never does
+  const up = scrollY < P.y - 2;
+  P.y = scrollY;
+  // a reader who scrolled up stays where they are, however much has
+  // streamed since: only the page's own scroll to the bottom gets the grace
+  const at = near || (!user && !up && recent);
   P.end = at;
   const hidden = at || document.body.classList.contains("account") || $("#palette").hidden === false || document.querySelector(".gallery") !== null;
   jump.hidden = hidden;

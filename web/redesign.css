@@ -138,10 +138,8 @@ header > .menu svg { width: 19px; height: 19px; }
 /* Chat column */
 #log { width: min(var(--col), 100% - 44px); padding: 30px 0 44px; }
 #log > * > * { margin-block: 16px; }
-.msg { font: 17px/1.7 var(--serif); }
-.msg.user { padding: 12px 18px; border: 0; border-radius: 20px 20px 7px 20px; background: linear-gradient(135deg, color-mix(in oklab, var(--accent) 14%, var(--lift)), color-mix(in oklab, var(--accent-3) 9%, var(--lift))); box-shadow: var(--shadow-sm); font: 15.5px/1.6 var(--sans); }
+.msg.user { padding: 12px 18px; border: 0; border-radius: 20px 20px 7px 20px; background: linear-gradient(135deg, color-mix(in oklab, var(--accent) 14%, var(--lift)), color-mix(in oklab, var(--accent-3) 9%, var(--lift))); box-shadow: var(--shadow-sm); }
 .msg.work { border-color: color-mix(in oklab, var(--accent) 22%, var(--hair)); border-radius: 16px; background: color-mix(in oklab, var(--lift) 80%, transparent); }
-.msg.unii { font-size: 16.5px; }
 .msg.tool { border-radius: 12px; border: 1px solid color-mix(in oklab, var(--hair) 70%, transparent); }
 .msg pre { border-radius: 13px; }
 .block { border-radius: 13px; border: 1px solid color-mix(in oklab, var(--hair) 70%, transparent); background: color-mix(in oklab, var(--block) 58%, var(--paper)); }
@@ -330,8 +328,7 @@ footer { padding: 8px max(22px, env(safe-area-inset-right)) max(16px, env(safe-a
   header > .credits { font-size: 11px; }
   #log { width: calc(100% - 24px); padding: 16px 0 28px; }
   #log > * > * { margin-block: 13px; }
-  .msg { font-size: 16.5px; }
-  .msg.user { max-width: 92%; font-size: 15px; }
+  .msg.user { max-width: 92%; }
   footer { padding: 6px 12px max(9px, env(safe-area-inset-bottom)); }
   .composer { border-radius: 23px; padding: 5px 5px 5px 15px; gap: 4px; }
   .composer textarea { font-size: 16px; padding: 8px 0; }
@@ -573,13 +570,6 @@ body.fx-open, body.palette-open { overflow: hidden; }
 @font-face { font-family: "Newsreader VF"; src: url("/fonts/newsreader.woff2") format("woff2"); font-weight: 200 800; font-style: normal; font-display: swap; }
 @font-face { font-family: "JetBrains Mono VF"; src: url("/fonts/jetbrains-mono.woff2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: swap; }
 
-:root {
-  --sans: "Manrope VF", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --serif: "Newsreader VF", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --brand: "Fraunces VF", "Iowan Old Style", "Palatino Linotype", Palatino, serif;
-  --mono: "JetBrains Mono VF", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --msg-size: 17.5px;
-}
 html { text-rendering: optimizeLegibility; }
 body { font-family: var(--sans); font-size: 16px; line-height: 1.55; font-optical-sizing: auto; }
 .brand { font-family: var(--brand); font-weight: 600; letter-spacing: -.035em; }
@@ -597,9 +587,6 @@ header > .sound[aria-pressed="true"] .wave { opacity: 1; }
 header > .sound[aria-pressed="true"] { color: color-mix(in oklab, var(--accent) 82%, var(--ink)); background: color-mix(in oklab, var(--accent) 11%, transparent); }
 
 /* Markdown inside a message */
-.msg { font-family: var(--serif); font-size: var(--msg-size); line-height: 1.7; font-weight: 430; letter-spacing: -.007em; font-optical-sizing: auto; }
-.msg.unii { font-family: var(--serif); font-size: var(--msg-size); line-height: 1.7; font-weight: 430; }
-.msg.user { font-family: var(--sans); font-size: calc(var(--msg-size) - 1.5px); line-height: 1.62; font-weight: 450; letter-spacing: -.01em; }
 #log > * > * { margin-block: 20px; }
 .msg p { margin-bottom: 1em; }
 .msg p:last-child { margin-bottom: 0; }
@@ -765,20 +752,29 @@ body.account .col-resize, body.fx-open .col-resize, body.palette-open .col-resiz
   --serif: "Geist Mono VF", ui-monospace, "SF Mono", Menlo, monospace;
   --brand: "Geist Mono VF", ui-monospace, "SF Mono", Menlo, monospace;
   --mono: "Geist Mono VF", ui-monospace, "SF Mono", Menlo, monospace;
-  --msg-size: 15.5px;
-  --fs-2xs: 9px;
-  --fs-xs: 10px;
-  --fs-sm: 11px;
-  --fs-ui: 12px;
-  --fs-md: 13px;
-  --fs-body: 13.5px;
-  --fs-chat: var(--msg-size);
-  --fs-user: calc(var(--msg-size) - 1px);
-  --fs-note: calc(var(--msg-size) - 1.5px);
-  --fs-tool: calc(var(--msg-size) - 3px);
-  --fs-code: calc(var(--msg-size) - 2.5px);
-  --fs-diff: calc(var(--msg-size) - 3px);
-  --fs-think: calc(var(--msg-size) - 3.5px);
+
+  /* The one map: a chat element's type to its font size. Rules below read
+     these and nothing else sets a chat element's size. */
+  --fs-chat: 15.5px;    /* a message, Unii's and the work's */
+  --fs-user: 14.5px;    /* the user's message */
+  --fs-note: 14px;      /* a note */
+  --fs-think: 12px;     /* a thinking trace */
+  --fs-summary: 12.5px; /* a condensed block (same as a tool's) */
+  --fs-tool: 12.5px;    /* a tool call and its output */
+  --fs-code: 13px;      /* a code block */
+  --fs-diff: 12.5px;    /* a diff */
+  --fs-call: 12.5px;    /* a call's line */
+  --fs-table: 13.5px;
+  --fs-th: 13px;
+  --fs-cap: 13px;
+
+  /* chrome, not chat text */
+  --fs-2xs: 10px;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-ui: 13px;
+  --fs-md: 14px;
+  --fs-body: 14.5px;
   --fs-title: clamp(34px, 4.6vw, 56px);
   --fs-h1: clamp(30px, 3.8vw, 44px);
   --fs-h2: clamp(22px, 2.6vw, 32px);
@@ -857,14 +853,14 @@ header .menu svg { width: 18px; height: 18px; }
 .msg pre:not(.diff) .lang { font-size: 8px; letter-spacing: .14em; }
 .msg pre.diff { font-size: var(--fs-diff); line-height: 1.55; }
 .msg pre.diff .lang { font-size: 9px; }
-.msg table { font-size: calc(var(--msg-size) - 2px); line-height: 1.45; }
-.msg th { font-size: calc(var(--msg-size) - 2.5px); }
-.msg .call { font-size: calc(var(--msg-size) - 2.5px); line-height: 1.55; }
+.msg table { font-size: var(--fs-table); line-height: 1.45; }
+.msg th { font-size: var(--fs-th); }
+.msg .call { font-size: var(--fs-call); line-height: 1.55; }
 .msg .call b { font-size: 8.5px; letter-spacing: .03em; }
 .msg .call .on { font-size: 8.5px; }
 .msg .ic { font-size: 12px; }
-.cap { font-size: calc(var(--msg-size) - 2.5px); line-height: 1.6; letter-spacing: -.012em; }
-.block { font-size: var(--fs-tool); line-height: 1.55; }
+.cap { font-size: var(--fs-cap); line-height: 1.6; letter-spacing: -.012em; }
+.block { font-size: var(--fs-summary); line-height: 1.55; }
 .block .lv { font-size: 8.5px; }
 .open > .fold { font-size: 10px; }
 .more > summary { font-size: 10px; }
@@ -941,9 +937,6 @@ header .menu svg { width: 18px; height: 18px; }
 .g-muted { font-size: 9.5px; }
 
 @media (max-width: 600px) {
-  :root { --msg-size: 15px; --fs-title: 34px; }
-  .msg { font-size: var(--msg-size); }
-  .msg.user { font-size: calc(var(--msg-size) - .5px); }
   .msg h1 { font-size: 1.5em; }
   .msg h2 { font-size: 1.25em; }
   .composer textarea { font-size: 16px; }
@@ -1919,7 +1912,7 @@ body.confirm-open { overflow: hidden; }
 .msg.echo[data-state="empty"] { --out-accent: var(--soft); }
 .msg.echo[data-result-of="web_search"] pre.diff code { white-space: pre-wrap; }
 .msg.echo[data-result-of="web_search"] pre.diff code > span { padding-left: 0; }
-.msg.echo[data-result-of="date"] pre.diff code > span.file { color: var(--ink); font-size: calc(var(--msg-size) - 1px); }
+.msg.echo[data-result-of="date"] pre.diff code > span.file { color: var(--ink); font-size: var(--fs-diff); }
 .msg.echo[data-result-of="spawn"] pre.diff code > span.file { color: color-mix(in oklab, var(--accent-3) 70%, var(--ink)); }
 .msg.echo[data-result-of="tell"] pre.diff code > span.file { color: color-mix(in oklab, var(--accent-2) 70%, var(--ink)); }
 
@@ -2888,18 +2881,6 @@ body {
     linear-gradient(215deg, color-mix(in oklab, var(--accent-3) 3%, transparent), transparent 88%) !important;
 }
 
-/* Type-size step only: raise the small chrome, session rows, section
-   headers and condensed copy by one modest step. No family or colour
-   changes. */
-:root {
-  --msg-size: 15.5px;
-  --fs-2xs: 10px;
-  --fs-xs: 11px;
-  --fs-sm: 12px;
-  --fs-ui: 13px;
-  --fs-md: 14px;
-  --fs-body: 14.5px;
-}
 #chats .sessions b { font-size: 15px; line-height: 1.35; }
 #chats .sessions span { font-size: 12px; }
 #chats .chats-label,

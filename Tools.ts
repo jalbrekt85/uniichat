@@ -391,14 +391,17 @@ export namespace Tools {
         if (role?.$ === "hands") {
           return Tools.job(tools, role.device, { name, input: args, cwd: who }, signal, id);
         }
-        if (typeof args.device !== "string" || args.device === "") {
+        // a model that forgets the field with one device open runs there
+        const device = typeof args.device === "string" && args.device !== "" ? args.device : Tools.only(tools);
+        if (device === null) {
           return { text: Tools.device_missing(tools), fail: true };
         }
-        return Tools.computer(tools, args.device, String(args.task));
+        return Tools.computer(tools, device, String(args.task));
       }
       default: {
-        const { device, ...input } = args;
-        if (typeof device !== "string" || device === "") {
+        const { device: named, ...input } = args;
+        const device = typeof named === "string" && named !== "" ? named : Tools.only(tools);
+        if (device === null) {
           return { text: Tools.device_missing(tools), fail: true };
         }
         return Tools.job(tools, device, { name, input, cwd: who }, signal, id);
@@ -639,6 +642,13 @@ export namespace Tools {
 
   export function opened(tools: Tools): [string, Device][] {
     return [...tools.devices].filter(([, d]) => d.terms.size > 0);
+  }
+
+  // the only device open, if exactly one is: a call that forgot its device
+  // field runs there; with none or several the model must name one
+  export function only(tools: Tools): string | null {
+    const open = Tools.opened(tools);
+    return open.length === 1 ? open[0][0] : null;
   }
 
   // why a call with no device field fails: a malformed call the model

@@ -1,0 +1,40 @@
+{
+  "name": "uniichat",
+  "private": true,
+  "scripts": {
+    "test": "bun test --isolate",
+    "web": "bun build web/src/main.ts --outfile web/app.js --target browser",
+    "setup": "bun Setup.ts",
+    "start": "bun Control.ts start",
+    "stop": "bun Control.ts stop",
+    "status": "bun Control.ts status",
+    "device": "bun Device.ts",
+    "e2e": "bun tests/e2e.ts",
+    "ui": "bun tests/ui.ts",
+    "live": "bun tests/live.ts",
+    "verify": "bun tests/verify.ts"
+  },
+  "dependencies": {
+    "3d-force-graph": "^1.80.2",
+    "@floating-ui/dom": "^1.8.0",
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@fontsource-variable/newsreader": "^5.3.0",
+    "@formkit/auto-animate": "^0.10.2",
+    "border-beam": "^1.4.1",
+    "bot-avatars": "^0.2.2",
+    "distortion-waves": "^0.1.0",
+    "highlight.js": "^11.12.0",
+    "img-fx": "^0.5.1",
+    "liquid-gooey": "^0.2.2",
+    "metal-fx": "^2.0.11",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "thinking-orbs": "^0.3.2",
+    "three": "^0.187.0",
+    "voice-glow": "^0.5.0",
+    "voice-ring": "^0.2.0"
+  }
+}

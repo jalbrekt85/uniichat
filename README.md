@@ -1,0 +1,163 @@
+UniiChat
+========
+
+**Local-first fork:** see [SETUP.md](SETUP.md) to run this on a user's machine against a remote oMLX model server.
+
+[▶ Watch the announcement video](https://x.com/VictorTaelin/status/2108200878553588091)
+
+**This repo is vibe-coded.** AI agents wrote nearly all of it, and AI
+agents reviewed it. Read it, run it and fork it as such: expect bugs.
+
+UniiChat is an AI agent whose chats never end. Each chat is a session
+with its own memory tree: you talk to that agent for days, weeks, years,
+and it remembers; start another chat whenever you want a fresh tree, and
+the old one keeps everything. The hosted version is at
+https://uniichat.com. This is its source, to run your own server on your
+own API keys.
+
+How it works
+------------
+
+- **A chat, a memory tree.** Every message is summarized into one line,
+  and neighboring lines are merged in pairs, again and again, into a
+  binary tree. Each call sees a view of the whole chat, up to 128 KB:
+  recent messages one line each, older ones covered by fewer, broader
+  lines. Detail fades with age, but nothing is lost.
+- **Sessions.** Each chat is its own session: its own messages, its own
+  tree, its own view, its own images. Nothing is shared but you, your
+  credit and your devices. The chat rail at the screen's left starts one
+  with "New chat" and returns to any of them; on a phone, its toggle in
+  the header opens it.
+- **Zoom.** The agent can open any line into the two it was made from,
+  down to the original message. So its context never rots, and it never
+  needs a "compaction" that throws the past away.
+- **Built in the background.** Summaries are written by a cheaper model
+  (the compactor) as messages arrive. The view changes only at its end,
+  so each call reads most of its input from the vendor's prompt cache.
+- **Every window is a view.** The server owns the chat. A browser tab, or
+  `unii` in a terminal, shows it live; any of them can send a message,
+  stop the work, or change the model.
+- **Agents and tools.** The agent runs a shell, reads and edits files,
+  and can drive a Mac's screen on any Mac where the local server's
+  device or `unii` is open (each is a device it can name). It can spawn
+  subagents, which work in the background and report back as messages.
+- **Import.** Bring your past Claude and ChatGPT chats (Claude Code and
+  Codex folders, or the websites' exports); they join the tree.
+
+The design is in the header comment of each file. Start with Memory.ts
+(the tree and the view), Server.ts (the chat, turns, workers) and
+AskAI.ts (model calls and the cache).
+
+Run it
+------
+
+You need [Bun](https://bun.sh) and a z.ai key: your GLM Coding Plan
+subscription's, or one from the API console
+(z.ai/manage-apikey/apikey-list).
+
+    export ZAI_API_KEY=...
+    bun Server.ts                    # http://127.0.0.1:8788, data in ~/.unii
+
+The server offers z.ai's GLM models by default, and every call (the
+chat, its summaries, its agents) runs on `glm-5.3` — not the Flash
+variant, though `glm-5.3-flash` is offered too, for a cheaper pick or
+compactor. GLM thinks of its own accord behind z.ai's
+Anthropic-compatible API, and its web searches run on z.ai's side.
+
+Then open http://127.0.0.1:8788 and type your email. With no mail key
+set, the server prints the sign-in link in its output: open it. Or chat
+from a terminal:
+
+    bun Term.ts http://127.0.0.1:8788
+
+It asks for your email, the server prints a link, and the page it opens
+asks for the code the terminal shows. `bun Term.ts help` lists the rest.
+
+Other commands:
+
+    bun run test                     # the tests, each file on its own
+    bun run web                      # rebuilds web/app.js from web/src
+    bun build --compile Term.ts --outfile unii
+                                     # one `unii` executable; `unii serve`
+                                     # runs the server it carries
+
+Your chats live in ~/.unii/users/<id> (the first chat) and
+~/.unii/users/<id>/sessions/<chat-id> (each new one), one JSON line per
+message (main/) and per summary (tree/), a view.json and a session.json
+beside them. They are the memory: back them up.
+
+Config
+------
+
+`~/.unii/config.json` (optional; the dir is `$UNII_DIR`). Each key may
+also be set as the variable `UNII_<KEY>`:
+
+- `site`: the server's origin, for sign-in links (default
+  http://127.0.0.1:8788). Another port: `UNII_SITE=http://127.0.0.1:9000
+  bun Server.ts 9000`.
+- `user`: the one local user, signed in without email or links — every
+  visitor is them (default `local`; the server binds 127.0.0.1). `""`:
+  the email sign-in instead, and the account's first chat opens with the
+  hello (later chats start blank).
+- `vendors`: what the server offers, comma-separated: `zai-api`
+  (default), `claude-api`, `openai-api`.
+- `models`: the models offered, by label (Pick.ts; default all).
+- `pick`: what a chat runs on until it picks another,
+  vendor:model:effort:speed (default `zai-api:glm-5.3:max:slow`; z.ai
+  ignores the effort: GLM thinks as it sees fit).
+- `compactor`: what writes the summaries (default
+  `zai-api:glm-5.3-flash:low:slow`: the cheaper GLM, background only).
+- `watchdog`: what reads the agent's thoughts as it works and, catching
+  a fix that fails one of its tests, calls on it to stop and talk the
+  root cause over with the user. The toggle is one token: `false` off,
+  `true` on (the default model, glm-5.3-flash), or a full pick.
+- `watchdog_debug`: `"1"`: the watchdog logs each thought it checks and
+  what it answers to `<dir>/watchdog.log` (and the server's window).
+- `agents`: what subagents run on (default: the chat's pick).
+- `work`: the agents' working dirs on each device (default
+  ~/.unii/work).
+- `rules`: a file appended to every system prompt.
+- `after`: a shell command run after each turn.
+- `workers`: how many processes serve the users (default none: one
+  process). With a number, `Server.ts` only routes, behind a proxy that
+  honors its `x-unii-worker` header (Server.ts explains).
+- `apple`, `apns`: the iOS app's App ID and push key id (ios/).
+
+Keys are read from the environment: `ZAI_API_KEY`, `ANTHROPIC_API_KEY`,
+`OPENAI_API_KEY`, `RESEND_API_KEY` (to email sign-in links; none: they
+print), `APNS_KEY`.
+
+With an Anthropic key instead, set `vendors`, `pick` and `compactor` to
+`claude-api` models, e.g. `UNII_VENDORS=claude-api
+UNII_PICK=claude-api:sonnet-5.5:medium:slow
+UNII_COMPACTOR=claude-api:haiku-5.5:high:slow`. With only an OpenAI
+key, set them to `openai-api` models, e.g. `UNII_VENDORS=openai-api
+UNII_PICK=openai-api:gpt-6.1-sol:medium:slow
+UNII_COMPACTOR=openai-api:gpt-6-luna:high:slow`.
+
+A self-hosted server is free: it bills no one, shows no prices, and calls
+only the model vendors. Billing.ts is the one place a hosted server
+plugs in its billing (uniichat.com sells credits; this repo has none).
+
+The `unii` terminal
+-------------------
+
+`web/install.sh` (served at /install.sh) runs the official installer,
+which installs the released `unii` executable. `unii` alone opens
+uniichat.com; `unii <url>` opens any server; `UNII_SESSION=<chat-id>`
+opens one chat, and `/new` and `/sessions` start and switch them. On a
+Mac the agent may use the screen by default: the first computer action
+compiles Computer.swift with swiftc, and macOS asks for Screen Recording
+and Accessibility. `UNII_COMPUTER=0` turns screen use off.
+
+Telemetry: once a day the `unii` terminal asks bend-lang.com's /check
+for the latest version (Term.ts update_check), sending its version, OS
+and CPU type, no account and no id; it also says whether this computer
+has ever self-hosted (set for good the first time it runs `unii serve`
+or opens a server other than uniichat.com). It is the one call a
+self-hosted UniiChat makes to us. `UNII_NO_TELEMETRY=1` turns it off.
+
+License
+-------
+
+Apache-2.0 (LICENSE). Copyright 2026 Higher Order Company.

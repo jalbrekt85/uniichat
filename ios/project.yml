@@ -1,0 +1,81 @@
+# UniiChat for iOS: `xcodegen` makes UniiChat.xcodeproj (and the
+# Info.plist and entitlements below) from this file; ios.sh builds it.
+# The team signing it is no setting here: ios.sh gives it (TEAM_ID).
+
+name: UniiChat
+options:
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    CODE_SIGN_STYLE: Automatic
+targets:
+  UniiChat:
+    type: application
+    platform: iOS
+    scheme: {}
+    sources: [App, Shared]
+    dependencies:
+      - target: Share
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.higherorderco.uniichat
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: UniiChat
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UniiSite: https://uniichat.com
+        UILaunchScreen: {}
+        UIUserInterfaceStyle: Light
+        ITSAppUsesNonExemptEncryption: false
+        NSMicrophoneUsageDescription: Dictate your messages to Unii.
+        NSCameraUsageDescription: Take a photo to send in your chat.
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    entitlements:
+      path: App/App.entitlements
+      properties:
+        aps-environment: development
+        com.apple.developer.associated-domains: [applinks:uniichat.com]
+        com.apple.security.application-groups: [group.com.higherorderco.uniichat]
+  Share:
+    type: app-extension
+    platform: iOS
+    sources: [Share, Shared]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.higherorderco.uniichat.share
+    info:
+      path: Share/Info.plist
+      properties:
+        CFBundleDisplayName: UniiChat
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UniiSite: https://uniichat.com
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).Share
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsText: true
+              NSExtensionActivationSupportsWebURLWithMaxCount: 1
+              NSExtensionActivationSupportsImageWithMaxCount: 20
+    entitlements:
+      path: Share/Share.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.higherorderco.uniichat]

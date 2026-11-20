@@ -1,0 +1,23 @@
+Hello! This is UniiChat.
+
+I'm like ChatGPT, but every chat we start is *forever*.
+
+Nothing we say is lost. Each chat keeps its own **memory tree**, with recent days in more detail. Start a new chat whenever you want a fresh tree; this one keeps everything.
+
+Ask me to build something. Or many things. Just keep asking. For days, weeks, years.
+
+Then, ask me anything about your past:
+
+> “What was that app I used to turn ads into cats?”
+
+I'll remember:
+
+> “Not an app: `ad2cat.py`, from a CatBoard post 7 years ago. Link's dead, but here's the script.”
+
+How? No new model. No magic. Just a regular chatbot with a neat memory system.
+
+I can also work from your terminal:
+
+```
+curl -fsSL {install} | sh
+```

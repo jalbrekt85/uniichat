@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+
+# generated web bundle
+web/app.js
+web/app.js.map
+*.tsbuildinfo
+
+# local runtime state, databases and logs
+.unii/
+.tmp/
+*.log
+*.pid
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# secrets
+.env
+.env.*
+!.env.example
+
+# OS junk
+.DS_Store

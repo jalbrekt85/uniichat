@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="UniiChat: the one chat you keep forever. It never forgets.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://uniichat.com/">
+<meta property="og:title" content="UniiChat">
+<meta property="og:description" content="Your entire life. One single chat.">
+<meta property="og:image" content="https://uniichat.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<title>UniiChat</title>
+<link rel="icon" href="/favicon.svg">
+<link rel="stylesheet" href="/style.css?v=20261119l">
+<link rel="stylesheet" href="/redesign.css?v=20261121d">
+<script type="module" src="/app.js?v=20261121d"></script>
+</head>
+<!-- the page, as a guest sees it until signed in (web/src/main.ts) -->
+<body class="guest">
+<!-- the chats, at the screen's left: new chat, then every session; a
+     drawer on a phone, opened by the header's toggle -->
+<aside id="chats" aria-label="Chats">
+  <div class="chats-top">
+    <button class="new" type="button"><span class="new-plus" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M8 3.25v9.5M3.25 8h9.5"/></svg></span><span>New chat</span></button>
+    <button class="work-new" type="button" data-work-new aria-label="New working dir" title="New working dir"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 11v6M9 14h6"/></svg></button>
+    <button class="chats-close" type="button" aria-label="Close chats">×</button>
+  </div>
+  <label class="chats-search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+    <input type="search" placeholder="Search chats" aria-label="Search chats" autocomplete="off">
+    <kbd>/</kbd>
+  </label>
+  <p class="chats-label">Chats</p>
+  <nav class="sessions"></nav>
+  <div class="chats-bottom"><button type="button" data-effects>Effects</button><button type="button" popovertarget="archived">Archived</button><button type="button" data-go="/account">Account</button></div>
+</aside>
+<div id="chats-veil"></div>
+<header>
+  <button class="chats-toggle" type="button" aria-label="Chats" aria-controls="chats" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h11"/></svg></button>
+  <button class="brand" data-go="/" data-act='{"$":"Goto","name":null}'><span id="fx-brand" class="brand-bot" aria-hidden="true"></span><span>UniiChat</span></button>
+  <span id="fx-badge" class="brand-badge" aria-hidden="true"></span>
+  <button class="effects-open" type="button" data-effects aria-label="Effects library" title="Effects library"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.7 4.6L18 9.3l-4.3 1.7L12 15.6l-1.7-4.6L6 9.3l4.3-1.7z"/><path d="M18.5 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/><path d="M5 15l.6 1.6L7.2 17l-1.6.6L5 19.2l-.6-1.6L2.8 17l1.6-.6z"/></svg><span>Effects</span></button>
+  <button class="sound" type="button" data-sound="icon" aria-label="Mute sound effects" title="Sound effects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h3.2L11 6v12l-3.8-3H4z"/><path class="wave" d="M14.5 9a4 4 0 0 1 0 6"/><path class="wave" d="M17 6.5a8 8 0 0 1 0 11"/></svg></button>
+  <span class="net">offline</span>
+  <button class="imping" popovertarget="import" hidden><span></span><progress max="1" value="0"></progress></button>
+  <button class="credits" data-go="/account"></button>
+  <button class="menu" popovertarget="menu" aria-label="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"/></svg></button>
+</header>
+<main id="log">
+  <section id="welcome" hidden>
+    <div id="fx-welcome" class="fx-welcome-art" aria-hidden="true"></div>
+    <div class="welcome-copy">
+      <span class="welcome-kicker">The one chat you keep forever</span>
+      <h1>What are we making?</h1>
+      <p>Workspaces, memory, tools and the effects that make waiting feel alive.</p>
+      <div class="welcome-actions">
+        <button class="welcome-new" type="button">Start a chat</button>
+        <button class="welcome-effects" type="button" data-effects>Explore effects</button>
+      </div>
+      <div class="welcome-prompts" aria-label="Starting points">
+        <button type="button" data-prompt="Help me plan a focused side project."><span>Plan</span> a side project <i>↗</i></button>
+        <button type="button" data-prompt="Explain this codebase to me and point out the three riskiest parts."><span>Explain</span> a codebase <i>↗</i></button>
+        <button type="button" data-prompt="Turn this rough idea into a crisp product brief: "><span>Shape</span> a rough idea <i>↗</i></button>
+      </div>
+    </div>
+  </section>
+  <div class="rows"></div><div class="tail"></div>
+  <div id="fx-activity" class="fx-activity" aria-live="polite"></div>
+</main>
+<button id="jump" type="button" hidden aria-label="Jump to the latest message"><span>↓</span> Latest</button>
+<button id="col-left" class="col-resize" type="button" role="separator" aria-orientation="vertical" aria-label="Resize chat from the left" aria-valuemin="600" aria-valuemax="1280" aria-valuenow="760" data-size="760" title="Drag to resize · double-click to reset"></button>
+<button id="col-right" class="col-resize" type="button" role="separator" aria-orientation="vertical" aria-label="Resize chat from the right" aria-valuemin="600" aria-valuemax="1280" aria-valuenow="760" data-size="760" title="Drag to resize · double-click to reset"></button>
+<main id="account" hidden></main>
+<aside id="skull-pane" aria-label="Memory tree">
+  <div id="fx-skull"></div>
+</aside>
+<footer>
+  <div id="toast" role="status" aria-live="polite" hidden></div>
+  <nav id="pick"></nav>
+  <div id="pics" class="pics"></div>
+  <form class="composer" autocomplete="off">
+    <button class="attach" type="button" aria-label="attach images"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden>
+    <textarea rows="1" autocomplete="off" autocapitalize="sentences" spellcheck="true"></textarea><div class="voice"><canvas></canvas><span>0:00</span></div><button class="mic" type="button" aria-label="dictate"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button><button class="send" type="submit" aria-label="send"><svg viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg><svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg></button>
+    <div id="fx-composer" class="fx-composer-layer" aria-hidden="true"></div>
+    <div id="fx-send" class="fx-send-layer" aria-hidden="true"></div>
+  </form>
+  <nav id="tabs"></nav>
+  <p class="ai"></p>
+</footer>
+<!-- out of credit: what was refused, then credit to add (Html.credit_html) -->
+<div id="wallet" popover>
+  <p class="title"></p>
+</div>
+<div id="menu" popover>
+  <button class="palette-open" type="button">Jump to… <kbd>⌘K</kbd></button>
+  <button data-go="/account">Account</button>
+  <button class="imp">Import History</button>
+  <button class="setup">Model settings</button>
+  <button type="button" data-sound>Sound effects · off</button>
+  <button class="out">Sign out</button>
+</div>
+<div id="confirm" popover="manual" data-mode="archive">
+  <div class="confirm-scrim">
+    <section class="confirm-panel" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-body">
+      <div class="confirm-top">
+        <span class="confirm-icon" aria-hidden="true">
+          <svg class="confirm-archive" viewBox="0 0 20 20"><path d="M3 4h14v3H3zM4 7h12v9H4zM7 11h6"/></svg>
+          <svg class="confirm-restore" viewBox="0 0 20 20"><path d="M4 10a6 6 0 1 1 1.8 4.3M4 14.5V10h4.5"/></svg>
+        </span>
+        <span class="confirm-kicker">archive</span>
+      </div>
+      <h2 id="confirm-title">Archive this chat?</h2>
+      <p id="confirm-body">It leaves the rail, but every message and its tree stay on disk. You can bring it back from Archived.</p>
+      <div class="confirm-actions">
+        <button type="button" class="confirm-no">Keep it</button>
+        <button type="button" class="confirm-yes">Archive</button>
+      </div>
+    </section>
+  </div>
+</div>
+<!-- the archived chats: behind the rail's Archived button, their own window -->
+<div id="archived" popover>
+  <div class="archived-head">
+    <span class="title">Archived chats</span>
+    <button type="button" class="archived-close" popovertarget="archived" popovertargetaction="hide" aria-label="Close">×</button>
+  </div>
+  <p class="sub">Hidden from the rail only. Every message stays on disk.</p>
+  <div class="archived-list"></div>
+</div>
+<!-- the work dir picker: behind the folder+ button in the rail's top -->
+<div id="workdir" popover>
+  <div class="archived-head">
+    <span class="title">New working dir</span>
+    <button type="button" class="archived-close" popovertarget="workdir" popovertargetaction="hide" aria-label="Close">×</button>
+  </div>
+  <p class="sub">Pick a folder. Chats in it run their tools there.</p>
+  <div class="pick-bar">
+    <button type="button" data-pick-up title="Up one folder" aria-label="Up one folder">↑</button>
+    <input class="pick-path" type="text" spellcheck="false" aria-label="Folder path">
+    <button type="button" data-pick-home title="Home" aria-label="Home">Home</button>
+  </div>
+  <div class="dirs"></div>
+  <div class="pick-actions"><button type="button" class="pick-choose" data-pick-choose>Use this folder</button></div>
+</div>
+<!-- before an import or a payment, once per account (main.ts warned) -->
+<div id="risk" popover="manual">
+  <p class="title">⚠️ WARNING: use at your own risk</p>
+  <ul>
+    <li>UniiChat is <a href="/experimental.jpg" target="_blank">experimental</a>. Expect bugs.</li>
+    <li class="bill">Money you add may be lost. All of it.</li>
+    <li>Your uploads may leak. Keep secrets out.</li>
+    <li class="bill">Billed by API use, not a subscription.</li>
+    <li>Served as is. No guarantees<span class="bill"> (<a href="/terms.html" target="_blank">Terms</a>)</span>.</li>
+  </ul>
+  <div class="acts"><button type="button" class="no">Cancel</button><button type="button" class="ok">I accept the risk</button></div>
+</div>
+<div id="import" popover>
+  <section class="start" hidden>
+    <p class="title">How do you want to start?</p>
+    <p class="sub">Both are fine. You can import any time from the ☰ menu.</p>
+    <div class="acts two"><button type="button" class="into">Import my past AI chats</button><button type="button" class="skip">Start fresh</button></div>
+  </section>
+  <form>
+    <p class="title">Import your past AI chats</p>
+    <p class="desk sub">Choose your <code>~/.claude</code> or <code>~/.codex</code> folder (hidden: <kbd>⌘</kbd><kbd>⇧</kbd><kbd>G</kbd> in the dialog).</p>
+    <p class="phone sub">Import on your computer: open this site there, or type <code>/import</code> in unii.</p>
+    <input type="file" name="dir" webkitdirectory hidden>
+    <input type="file" name="zip" accept=".zip,.json" multiple hidden>
+    <fieldset class="src desk" data-app="Claude">
+      <legend>Claude</legend>
+      <details class="pick" hidden><summary></summary><div class="sessions"></div></details>
+      <button type="button" class="pickzip">Add a website export</button>
+    </fieldset>
+    <fieldset class="src desk" data-app="ChatGPT">
+      <legend>ChatGPT</legend>
+      <details class="pick" hidden><summary></summary><div class="sessions"></div></details>
+      <button type="button" class="pickzip">Add a website export</button>
+    </fieldset>
+    <fieldset class="want" hidden>
+      <label class="tools"><input type="checkbox" name="tools"> Tool calls</label>
+      <label class="since"><span class="from"></span><span class="to"></span><input type="range" name="back" min="0"></label>
+    </fieldset>
+    <p class="found"></p>
+    <p class="guess"></p>
+    <div class="topup"></div>
+    <div class="acts"><button type="button" class="skip">Skip</button><button type="button" class="pickdir desk">Choose folder</button><button class="go" hidden>Import</button></div>
+  </form>
+  <section class="prog" hidden>
+    <p class="title">Importing your history</p>
+    <progress max="1" value="0"></progress>
+    <p class="pct"></p>
+    <p class="sub"></p>
+    <div class="topup"></div>
+    <div class="acts"><button type="button" class="skip">Go to the chat</button><button type="button" class="go flow"></button></div>
+  </section>
+</div>
+<div id="palette" hidden>
+  <div class="palette-backdrop" data-palette-close></div>
+  <section class="palette-panel" role="dialog" aria-modal="true" aria-label="Jump to a chat or command">
+    <div class="palette-search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+      <input id="palette-input" type="text" placeholder="Jump to a chat or run a command…" autocomplete="off" spellcheck="false" aria-label="Search chats and commands" aria-controls="palette-list" aria-activedescendant="">
+      <kbd>esc</kbd>
+    </div>
+    <div id="palette-list" role="listbox" aria-label="Results"></div>
+    <footer class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span class="palette-brand">UniiChat</span></footer>
+  </section>
+</div>
+<div id="fx-gallery"></div>
+</body>
+</html>

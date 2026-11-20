@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <style>.ink{fill:#111;stroke:#111}@media (prefers-color-scheme:dark){.ink{fill:#e3e3e6;stroke:#e3e3e6}}</style>
+  <mask id="cut"><rect width="64" height="64" fill="#fff"/><path d="M32 27.5c-3-4.5-6-6.5-9-6.5a6.5 6.5 0 0 0 0 13c3 0 6-2 9-6.5s6-6.5 9-6.5a6.5 6.5 0 0 1 0 13c-3 0-6-2-9-6.5z" style="fill:none;stroke:#000;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round"/></mask>
+  <path class="ink" mask="url(#cut)" d="M22 9h20a14 14 0 0 1 14 14v9a14 14 0 0 1-14 14H28l-11 9 2-9.6A14 14 0 0 1 8 32v-9A14 14 0 0 1 22 9z" style="stroke-width:3;stroke-linejoin:round"/>
+</svg>

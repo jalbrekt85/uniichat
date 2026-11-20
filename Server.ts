@@ -352,19 +352,12 @@ export namespace Chat {
       told  : () => Chat.all(chat, Chat.state(chat)),
       rest  : () => Chat.free(chat),
     });
-    const pick = Pick.load(mem.pick, config.OFFER, config.PICK);
+    const pick = config.PICK;
     const chat: Chat = {
       acct, mem, session: sid, key, work: folder, titled: false, tools, pick, socks: new Set(), acts: new Map(), busy: false, resume: false, continues: 0, generating: false, posts: 1, call: null, model: "", check: null, asked: false, open: 0, sent: [], wait: [],
       halt: new AbortController(), dog: Watchdog.dog(), live: [], calls: {}, toolAt: new Map(), echoAt: new Map(), eye: { parts: [], from: 0 }, after: Promise.resolve(), batch: null, ending: null,
       writes: Promise.resolve(), held: null, wallet,
     };
-    // a saved pick not offered gave way: told once
-    const saved = mem.pick === null ? null : Pick.label(mem.pick as Pick);
-    if (saved !== null && saved !== Pick.label(pick)) {
-      mem.pick = pick;
-      Memory.save(mem);
-      Chat.note(chat, saved + " isn't offered here, so the chat now runs on " + Pick.label(pick) + ".");
-    }
     mem.pay = tools.pay = wallet.pay;
     // the local fork (config.USER) opens blank: no hello, nothing to sign
     // in to. A new chat starts blank too: the hello is the account's
@@ -1701,13 +1694,7 @@ export namespace Chat {
         return { usd: Import.import_usd(chat.mem.count, sizes.split(",").map(Number)) };
       }
       case "pick": {
-        const pick = Pick.read(msg.to, config.OFFER);
-        if (pick === null) {
-          return { error: "No pick " + JSON.stringify(msg.to) + "." };
-        }
-        chat.pick = chat.mem.pick = pick;
-        Memory.save(chat.mem);
-        Chat.change(chat);
+        // the models are fixed (Models.ts): there is no picker to move
         return {};
       }
       case "out": {
@@ -2877,6 +2864,7 @@ export async function serve(port: number, run: string[] | null): Promise<void> {
   if (worker === undefined && run !== null) {
     Main.supervise(port, run);
   } else {
+    await Local.probe();
     await Main.start(port);
   }
 }

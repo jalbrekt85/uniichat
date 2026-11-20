@@ -565,17 +565,8 @@ export function view_running(v: View): boolean {
 }
 
 export function view_pick(v: View): Knob[] {
-  if (v.pick === null) {
-    return [];
-  }
-  const { model, effort, speed } = v.pick;
-  const rate  = Price.rate(Pick.ask(v.pick).model);
-  const price = rate === undefined ? "" : ": $" + rate.input + "/M tokens in, $" + rate.output + "/M out";
-  return [
-    { text: model, move: "model", hint: model + price },
-    { text: effort, move: "effort", hint: effort + " effort: how long it thinks first; more is smarter, slower and costs more" },
-    { text: speed, move: "speed", hint: speed + ": ×" + Price.times(speed) + " the price" },
-  ];
+  // the models are fixed (Models.ts): there is no picker, so no knobs
+  return [];
 }
 
 export function view_count(v: View): number {

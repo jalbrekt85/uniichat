@@ -8,8 +8,8 @@
 
 import * as fs from "node:fs";
 import * as os from "node:os";
-import type { Vendor } from "./AskAI.ts";
-import { LABELS, VENDORS, Pick, type Offer } from "./Pick.ts";
+import { MAIN, COMPACTOR as COMPACTOR_CHOICE, OFFER as OFFER_MODELS, type Choice } from "./Models.ts";
+import { Pick, type Offer } from "./Pick.ts";
 
 // Constants
 // =========
@@ -20,10 +20,7 @@ const PATH = DIR + "/config.json";
 const FILE: Record<string, string> = fs.existsSync(PATH) ? JSON.parse(fs.readFileSync(PATH, "utf8")) : {};
 
 export const SITE    = config_get("site", "http://127.0.0.1:8788").replace(/\/$/, "");
-export const OFFER: Offer = {
-  vendors : config_vendors(config_get("vendors", "zai-api")),
-  models  : config_get("models", LABELS.join()).split(",").map((m) => m.trim()),
-};
+export const OFFER: Offer = OFFER_MODELS;
 
 export const WORK       = config_path(config_get("work", DIR + "/work"));
 export const RULES      = config_path(config_get("rules", ""));
@@ -33,17 +30,17 @@ export const AFTER      = config_get("after", "");
 // server binds 127.0.0.1). "": off, the email sign-in instead
 export const USER       = config_get("user", "local");
 
-export const PICK       = config_run("pick", config_get("pick", "zai-api:glm-5.3:max:slow"));
+export const PICK       = config_choice(MAIN, "pick");
 
 // what every compaction runs on, a chat's and an import's alike, whatever
 // the chat's pick
-export const COMPACTOR  = config_run("compactor", config_get("compactor", "zai-api:glm-5.3-flash:low:slow"));
+export const COMPACTOR  = config_choice(COMPACTOR_CHOICE, "compactor");
 export const AGENTS     = config_get("agents", "") ? config_run("agents", config_get("agents", "")) : null;
 
 // what reads the agent's thoughts for the least-resistance habit and
 // calls it out (Watchdog.ts). THE TOGGLE, one token in config.json:
 // "watchdog": false (or "") turns it off; true or the pick turns it on
-const WATCH: any = config_get("watchdog", "zai-api:glm-5.3-flash:low:slow");
+const WATCH: any = config_get("watchdog", "false");
 const WATCH_OFF = WATCH === false || WATCH === "" || WATCH === "false" || WATCH === "off" || WATCH === "0";
 const WATCH_ON_DEFAULT = WATCH === true || WATCH === "true";
 export const WATCHDOG   = WATCH_OFF ? null : config_run("watchdog", WATCH_ON_DEFAULT ? "zai-api:glm-5.3-flash:low:slow" : String(WATCH));
@@ -91,13 +88,13 @@ function config_run(key: string, text: string): Pick {
   return pick;
 }
 
-function config_vendors(text: string): Vendor[] {
-  const list = text.split(",").map((v) => v.trim()) as Vendor[];
-  const bad = list.find((v) => !VENDORS.includes(v));
-  if (bad !== undefined) {
-    throw new Error("config: vendors can't offer " + bad);
+// a model choice fixed in Models.ts: checked exactly as a pick would be
+function config_choice(choice: Choice, key: string): Pick {
+  const pick = Pick.read(choice, OFFER);
+  if (pick === null) {
+    throw new Error("config: " + key + " is not offered here: " + JSON.stringify(choice));
   }
-  return list;
+  return pick;
 }
 
 function config_key(name: string): string {

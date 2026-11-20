@@ -99,14 +99,10 @@ also be set as the variable `UNII_<KEY>`:
   visitor is them (default `local`; the server binds 127.0.0.1). `""`:
   the email sign-in instead, and the account's first chat opens with the
   hello (later chats start blank).
-- `vendors`: what the server offers, comma-separated: `zai-api`
-  (default), `claude-api`, `openai-api`.
-- `models`: the models offered, by label (Pick.ts; default all).
-- `pick`: what a chat runs on until it picks another,
-  vendor:model:effort:speed (default `zai-api:glm-5.3:max:slow`; z.ai
-  ignores the effort: GLM thinks as it sees fit).
-- `compactor`: what writes the summaries (default
-  `zai-api:glm-5.3-flash:low:slow`: the cheaper GLM, background only).
+- The models are not settings. `Models.ts` names the chat's model and the
+  compactor's, and every build of these sources runs those two: there is
+  no picker and no `vendors`/`models`/`pick`/`compactor` key. A chat that
+  saved a pick under an older build ignores it.
 - `watchdog`: what reads the agent's thoughts as it works and, catching
   a fix that fails one of its tests, calls on it to stop and talk the
   root cause over with the user. The toggle is one token: `false` off,

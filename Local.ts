@@ -33,6 +33,12 @@ type LocalFile = { server?: string; key?: string };
 const DIR = process.env.UNII_DIR ?? os.homedir() + "/.unii";
 const FILE = path.join(DIR, "local.json");
 
+// the context windows the model server reports, by model id; a remote
+// oMLX has no ~/.omlx settings here, so the server's own list is the source
+const WINDOWS = new Map<string, number>();
+// when the last failed probe ran (a window asked for that is not known yet)
+let PROBED = 0;
+
 // Local
 // =====
 
@@ -63,16 +69,48 @@ export namespace Local {
     fs.writeFileSync(FILE, JSON.stringify({ server: server.replace(/\/$/, ""), key }, null, 2) + "\n", { mode: 0o600 });
   }
 
-  // the model's configured context window, from oMLX's settings; null:
-  // unknown (not an oMLX model, or no such setting)
+  // read the model server's limits: /v1/models max_model_len, for every
+  // model it serves. Works for a remote oMLX; a local settings file is only
+  // a fallback for one that does not answer.
+  export async function probe(): Promise<void> {
+    try {
+      const key = Local.key();
+      const res = await fetch(Local.server() + "/v1/models", {
+        headers: { authorization: "Bearer " + key, "x-api-key": key },
+        signal: AbortSignal.timeout(3000),
+      });
+      if (!res.ok) {
+        return;
+      }
+      const body: any = await res.json();
+      for (const model of body?.data ?? []) {
+        const n = Number(model?.max_model_len);
+        if (typeof model?.id === "string" && Number.isFinite(n) && n > 0) {
+          WINDOWS.set(model.id, n);
+        }
+      }
+    } catch {}
+  }
+
+  // the model's context window: what the server reported, then oMLX's
+  // local settings (when it runs here); null: unknown (eviction refuses)
   export function window(id: string): number | null {
+    const live = WINDOWS.get(id);
+    if (live !== undefined) {
+      return live;
+    }
     try {
       const settings = JSON.parse(fs.readFileSync(path.join(os.homedir(), ".omlx", "model_settings.json"), "utf8"));
       const n = Number(settings?.models?.[id]?.max_context_window);
-      return Number.isFinite(n) && n > 0 ? n : null;
-    } catch {
-      return null;
+      if (Number.isFinite(n) && n > 0) {
+        return n;
+      }
+    } catch {}
+    if (Date.now() - PROBED > 30000) {
+      PROBED = Date.now();
+      void Local.probe();
     }
+    return null;
   }
 
   export const wire: Wire<State> = {

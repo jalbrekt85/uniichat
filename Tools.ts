@@ -651,8 +651,24 @@ export namespace Tools {
   // else why not: no such device (a resend with a listed one fixes it),
   // or the device's unii closed (only the user opens one, so a retry in
   // a loop only keeps the chat busy: end the turn instead)
+  // the device a call names: a host's ".local" suffix is optional, so a
+  // model taught the Bonjour name reaches a device registered without it
+  export function find(tools: Tools, name: string): Device | undefined {
+    const bare = (n: string) => n.replace(/\.local$/i, "");
+    const exact = tools.devices.get(name);
+    if (exact !== undefined) {
+      return exact;
+    }
+    for (const [other, d] of tools.devices) {
+      if (bare(other) === bare(name)) {
+        return d;
+      }
+    }
+    return undefined;
+  }
+
   export function open(tools: Tools, device: string, computer: boolean): Device | string {
-    const d = tools.devices.get(device);
+    const d = Tools.find(tools, device);
     const open = Tools.opened(tools).map(([name]) => name).join(", ") || "none";
     if (d === undefined) {
       return "No device \"" + device + "\". Devices open now: " + open + ". Resend with device set to one of them.";
@@ -669,7 +685,7 @@ export namespace Tools {
   // the job `id` on a device, waited on: started, unless it runs
   export function job(tools: Tools, device: string, job: Job, signal: AbortSignal, id: string): Promise<Out> {
     const work = typeof tools.hooks.work === "function" ? tools.hooks.work() : job.work;
-    const run = tools.devices.get(device)?.jobs.get(id) ?? Tools.start_job(tools, device, { ...job, work }, id);
+    const run = Tools.find(tools, device)?.jobs.get(id) ?? Tools.start_job(tools, device, { ...job, work }, id);
     if (typeof run === "string") {
       return Promise.resolve({ text: run, fail: true });
     }
@@ -711,7 +727,7 @@ export namespace Tools {
   }
 
   export function done(tools: Tools, device: string, id: string, out: Out): void {
-    tools.devices.get(device)?.jobs.get(id)?.end(out);
+    Tools.find(tools, device)?.jobs.get(id)?.end(out);
   }
 
   // Agents

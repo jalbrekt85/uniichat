@@ -19,6 +19,7 @@
 //      UNII_WORK (default ~/.unii/work)
 //      UNII_DEVICE (default the host name)
 
+import { spawnSync } from "node:child_process";
 import * as os from "node:os";
 import * as path from "node:path";
 import { Machine } from "./Machine.ts";
@@ -35,7 +36,10 @@ type Conn = { ws: WebSocket; session: string; active: Map<string, AbortControlle
 
 const URL   = (process.env.UNII_URL ?? "http://127.0.0.1:8788").replace(/\/$/, "");
 const WORK  = process.env.UNII_WORK ?? path.join(os.homedir(), ".unii", "work");
-const NAME  = process.env.UNII_DEVICE ?? os.hostname();
+// this device's name, as the agent sees it: on macOS its local host name
+// (Bonjour's, unique on its network), else the host's — as Term.ts names it
+const LOCAL = process.platform === "darwin" ? spawnSync("scutil", ["--get", "LocalHostName"]).stdout?.toString().trim() : "";
+const NAME  = process.env.UNII_DEVICE ?? (LOCAL || os.hostname());
 const FIRST = "default";
 // a local Mac's screen is part of this machine's hands; the user grants
 // macOS's Screen Recording and Accessibility once, on the first use

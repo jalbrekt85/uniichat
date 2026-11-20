@@ -166,7 +166,39 @@ export function open_browser(url = SITE): void {
 
 export type StartOptions = { open?: boolean; quiet?: boolean };
 
+// a fresh clone: install the web's deps and build its bundle before the
+// server imports web/app.js (a missing or stale bundle stops it at import)
+function ensure_ready(): void {
+  if (!fs.existsSync(path.join(ROOT, "node_modules"))) {
+    console.log("deps: installing (bun install)");
+    const run = Bun.spawnSync([process.execPath, "install"], { cwd: ROOT, stdout: "inherit", stderr: "inherit" });
+    if (run.exitCode !== 0) {
+      throw new Error("bun install failed");
+    }
+  }
+  const out = path.join(ROOT, "web", "app.js");
+  const src = path.join(ROOT, "web", "src");
+  let stale = !fs.existsSync(out);
+  if (!stale) {
+    const at = fs.statSync(out).mtimeMs;
+    for (const name of fs.readdirSync(src)) {
+      if (fs.statSync(path.join(src, name)).mtimeMs > at) {
+        stale = true;
+        break;
+      }
+    }
+  }
+  if (stale) {
+    console.log("web: building (bun run web)");
+    const run = Bun.spawnSync([process.execPath, "build", "web/src/main.ts", "--outfile", "web/app.js", "--target", "browser"], { cwd: ROOT, stdout: "inherit", stderr: "inherit" });
+    if (run.exitCode !== 0) {
+      throw new Error("the web build failed");
+    }
+  }
+}
+
 export async function start(opts: StartOptions = {}): Promise<void> {
+  ensure_ready();
   const app = app_config();
   const local = local_config();
   const work = work_dir();

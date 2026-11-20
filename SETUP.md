@@ -12,10 +12,11 @@ server never gets a shell on anyone's Mac.
 
 ## On the model server (once, on the M5 Ultra)
 
-1. oMLX binds `0.0.0.0:8000` with the models (`glm-5.3-flash` for both
-   the chat and its compactor; `qwen3-4b`, `qwen2.5-0.5b` and
-   `qwen3.6-35b` are optional alternates), so the LAN can reach it. It
-   still answers on loopback for Funnel.
+1. oMLX binds `0.0.0.0:8000` with the models `Models.ts` names
+   (`glm-5.3-flash` for both the chat and its compactor by default;
+   `qwen3-4b`, `qwen2.5-0.5b` and `qwen3.6-35b` are alternates a build
+   may choose), so the LAN can reach it. It still answers on loopback for
+   Funnel.
 2. Expose only that port publicly:
    ```bash
    tailscale funnel --bg 8000

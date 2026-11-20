@@ -197,8 +197,11 @@ function images_html(names: string[], session: string): string {
 // the line over the message box: fold/unfold (none on an agent's page),
 // a rule, then the pick's knobs
 export function pick_html(fold: string | null, on: boolean, knobs: View.Knob[]): string[] {
-  const parts = knobs.map((k) => `<button title="${esc(k.hint)}"${act_html({ $: "Move", move: k.move })}>${esc(k.text)}</button>`);
   const all = fold === null ? [] : [`<button class="all"${act_html({ $: "Fold", on })}>${esc(fold)}</button>`];
+  if (knobs.length === 0) {
+    return all;
+  }
+  const parts = knobs.map((k) => `<button title="${esc(k.hint)}"${act_html({ $: "Move", move: k.move })}>${esc(k.text)}</button>`);
   return [...all, `<span class="rule"></span>`, ...parts.flatMap((part, i) => (i === 0 ? [part] : [`<span class="dot">·</span>`, part]))];
 }
 

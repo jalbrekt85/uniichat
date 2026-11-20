@@ -242,7 +242,6 @@ export namespace Memory {
       busy: new Map(), sides: new Map(), calls: new Map(), hold: [null, "paused"], failed: null, done: false, agent: false, started: 0, tally: null, wait: new Set(), focus: new Set(), share, acted,
     };
     const saved = Memory.saved(dir);
-    mem.pick = saved?.pick ?? null;
     mem.goal = saved?.goal ?? null;
     mem.work = saved?.work ?? [];
     mem.ends.main = Memory.index(mem, "main", saved?.main ?? [0, 0]);
@@ -282,7 +281,7 @@ export namespace Memory {
   export function save(mem: Memory): void {
     const file = mem.dir + "/view.json";
     const [chat, seen] = [mem.view, mem.seen].map((view): Kept => ({ parts: view.parts.map((part) => [part.l, part.i]), batch: view.batch }));
-    fs.writeFileSync(file + ".new", JSON.stringify({ ...chat, seen, pick: mem.pick, goal: mem.goal, work: mem.work, ...mem.ends }));
+    fs.writeFileSync(file + ".new", JSON.stringify({ ...chat, seen, goal: mem.goal, work: mem.work, ...mem.ends }));
     fs.renameSync(file + ".new", file);
     Disk.wrote(file);
   }

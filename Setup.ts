@@ -96,10 +96,6 @@ fs.mkdirSync(work, { recursive: true });
 
 const app = {
   site       : "http://127.0.0.1:" + PORT,
-  vendors    : "local-api",
-  models     : "local-glm,local-qwen,local-mid,local-smoke",
-  pick       : "local-api:local-glm:max:slow",
-  compactor  : "local-api:local-mid:low:slow",
   watchdog   : false,
   user       : "local",
   work,

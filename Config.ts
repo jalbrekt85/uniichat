@@ -86,13 +86,14 @@ function config_run(key: string, text: string): Pick {
   return pick;
 }
 
-// a model choice fixed in Models.ts: checked exactly as a pick would be
+// a model choice fixed in models.json: no table to match, so a model the
+// server added works by editing models.json alone (Models.ts checked the
+// id is non-empty and the effort and speed are known)
 function config_choice(choice: Choice, key: string): Pick {
-  const pick = Pick.read(choice, OFFER);
-  if (pick === null) {
-    throw new Error("config: " + key + " is not offered here: " + JSON.stringify(choice));
+  if (!OFFER.vendors.includes(choice.vendor)) {
+    throw new Error("config: " + key + " names vendor " + choice.vendor + ", which is not offered");
   }
-  return pick;
+  return { ...choice };
 }
 
 function config_key(name: string): string {

@@ -49,22 +49,15 @@ const GLM: Model[] = [
   { label: "glm-5.3",     id: "glm-5.3",     speeds: ["slow"] },
   { label: "glm-5.3-flash", id: "glm-5.3-flash", speeds: ["slow"] },
 ];
-// the local oMLX server: a model's label is its id, the string the server
-// itself reports, so nothing translates between models.json and the request
-const LOCAL: Model[] = [
-  { label: "glm-5.3-flash", id: "glm-5.3-flash", speeds: ["slow"] },
-  { label: "qwen3.6-35b", id: "qwen3.6-35b",   speeds: ["slow"] },
-  { label: "qwen3-4b", id: "qwen3-4b",      speeds: ["slow"] },
-  { label: "Qwen3-4B-Instruct-2507-4bit", id: "Qwen3-4B-Instruct-2507-4bit", speeds: ["slow"] },
-  { label: "qwen2.5-0.5b", id: "qwen2.5-0.5b", speeds: ["slow"] },
-];
+// no local table: local-api's models are models.json, and nothing here
+// names one, so a new id needs no code change
 
 // each vendor's models, at the speeds it runs them
 const MODELS: Record<Vendor, Model[]> = {
   "claude-api": [OPUS, SONNET, HAIKU],
   "openai-api": OPENAI,
   "zai-api"   : GLM,
-  "local-api" : LOCAL,
+  "local-api" : [],
 };
 
 export const EFFORTS = ["low", "medium", "high", "xhigh", "max"];

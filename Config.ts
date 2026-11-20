@@ -1,10 +1,11 @@
 // Config
 // ======
 // The server's settings. Its DIR ($UNII_DIR, default ~/.unii) holds
-// config.json, the lock and users/<id>. Each key of config.json (README)
-// may be set as UNII_<KEY> instead; a path may start with "~/". The keys
-// are read from the environment and removed from it, so no program an
-// agent runs inherits them, and put back for the workers.
+// local.json (Local.ts), the lock and users/<id>. There is no
+// config.json: every setting is the default below, which a run may
+// override with UNII_<KEY>. A path may start with "~/" . The keys are
+// read from the environment and removed from it, so no program an agent
+// runs inherits them, and put back for the workers.
 
 import * as fs from "node:fs";
 import * as os from "node:os";
@@ -16,14 +17,11 @@ import { Pick, type Offer } from "./Pick.ts";
 
 export const DIR = config_path(process.env.UNII_DIR ?? "~/.unii");
 
-const PATH = DIR + "/config.json";
-const FILE: Record<string, string> = fs.existsSync(PATH) ? JSON.parse(fs.readFileSync(PATH, "utf8")) : {};
-
 export const SITE    = config_get("site", "http://127.0.0.1:8788").replace(/\/$/, "");
 export const OFFER: Offer = OFFER_MODELS;
 
 export const WORK       = config_path(config_get("work", DIR + "/work"));
-export const RULES      = config_path(config_get("rules", ""));
+export const RULES      = config_path(config_get("rules", fs.existsSync(DIR + "/rules.md") ? DIR + "/rules.md" : ""));
 export const AFTER      = config_get("after", "");
 
 // this fork's single local user: every visitor is them, no sign-in (the
@@ -72,7 +70,7 @@ export const KEYS: Record<string, string> = Object.fromEntries(Object.entries(VA
 // ======
 
 export function config_get(key: string, def: string): string {
-  return process.env["UNII_" + key.toUpperCase()] ?? FILE[key] ?? def;
+  return process.env["UNII_" + key.toUpperCase()] ?? def;
 }
 
 function config_path(path: string): string {

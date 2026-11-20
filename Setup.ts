@@ -26,11 +26,6 @@ const NO_OPEN    = args.includes("--no-open");
 const NO_START   = args.includes("--no-start");
 const NO_AUTO    = args.includes("--no-autostart");
 
-// Defaults
-// ========
-
-const DEFAULT_WORK = path.join(os.homedir(), "Uniichat");
-
 // Setup
 // =====
 
@@ -80,7 +75,7 @@ if (picked === undefined && lan === null && on_lan_subnet()) {
 const via = picked !== undefined ? "explicit" : lan !== null ? (lan === LAN_SERVER ? "lan" : "lan-ip") : "remote";
 const server = (picked ?? lan ?? DEFAULT_SERVER).replace(/\/$/, "");
 const key    = (arg("key") ?? process.env.LOCAL_API_KEY ?? "").trim();
-const work   = path.resolve(arg("work") ?? DEFAULT_WORK);
+const work   = path.join(DIR, "work");
 
 if (server === "" || !/^https?:\/\//.test(server)) {
   console.error("Setup: the model server must be an http(s) URL.");
@@ -94,18 +89,12 @@ if (server.includes("YOUR-HOST")) {
 fs.mkdirSync(DIR, { recursive: true, mode: 0o700 });
 fs.mkdirSync(work, { recursive: true });
 
-const app = {
-  site       : "http://127.0.0.1:" + PORT,
-  watchdog   : false,
-  user       : "local",
-  work,
-};
+// the one per-machine file: the model server and this machine's key. Every
+// other setting is a default in Config.ts (models: models.json).
 const local = { server, key };
 
-fs.writeFileSync(path.join(DIR, "config.json"), JSON.stringify(app, null, 2) + "\n", { mode: 0o600 });
 fs.writeFileSync(path.join(DIR, "local.json"), JSON.stringify(local, null, 2) + "\n", { mode: 0o600 });
 
-console.log("config: " + path.join(DIR, "config.json"));
 console.log("model:  " + server + (key ? " (key set)" : " (no key)") + " [" + via + "]");
 console.log("work:   " + work);
 

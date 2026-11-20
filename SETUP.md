@@ -38,12 +38,13 @@ Sub-keys are API-only, revocable, and cannot log into the admin UI.
    - macOS/Linux: `./setup`
    - Windows: double-click **setup.cmd**
 4. A local page opens at `http://127.0.0.1:8788/setup`. Paste the
-   **API key** there — never in the terminal. The work folder is shown
-   (default `~/Uniichat`); change it by editing `~/.unii/config.json` or
-   passing `--work` to setup.
-5. Setup writes `~/.unii/config.json` and `~/.unii/local.json`, starts the
-   local server and a headless device, opens that page, and installs
-   autostart. Saving the key applies to the next model call; no restart.
+   **API key** there — never in the terminal. The work folder is
+   `~/.unii/work`.
+5. Setup writes only `~/.unii/local.json` (the model server and this
+   machine's key; every other setting is a code default, and the models
+   are `models.json`), starts the local server and a headless device,
+   opens that page, and installs autostart. Saving the key applies to the
+   next model call; no restart.
 
 No Bun preinstall: `setup` installs it if missing. No git required after the
 clone. No accounts, no pairing codes, no public Uniichat server.

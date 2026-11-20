@@ -89,8 +89,8 @@ beside them. They are the memory: back them up.
 Config
 ------
 
-`~/.unii/config.json` (optional; the dir is `$UNII_DIR`). Each key may
-also be set as the variable `UNII_<KEY>`:
+Settings are code defaults (`Config.ts`), overridable for a run as
+`UNII_<KEY>`; there is no `config.json`.
 
 - `site`: the server's origin, for sign-in links (default
   http://127.0.0.1:8788). Another port: `UNII_SITE=http://127.0.0.1:9000
@@ -99,10 +99,11 @@ also be set as the variable `UNII_<KEY>`:
   visitor is them (default `local`; the server binds 127.0.0.1). `""`:
   the email sign-in instead, and the account's first chat opens with the
   hello (later chats start blank).
-- The models are not settings. `Models.ts` names the chat's model and the
-  compactor's, and every build of these sources runs those two: there is
-  no picker and no `vendors`/`models`/`pick`/`compactor` key. A chat that
-  saved a pick under an older build ignores it.
+- The models are not settings: `models.json` names the chat's model and
+  the compactor's **by the id the model server itself uses**. That id is
+  whatever `GET {server}/v1/models` reports (with its `max_model_len`);
+  put it in `models.json` verbatim. There is no picker and no label in
+  between, and a chat that saved a pick under an older build ignores it.
 - `watchdog`: what reads the agent's thoughts as it works and, catching
   a fix that fails one of its tests, calls on it to stop and talk the
   root cause over with the user. The toggle is one token: `false` off,

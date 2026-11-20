@@ -1,0 +1,12 @@
+{
+  "main": {
+    "model": "glm-5.3-flash",
+    "effort": "max",
+    "speed": "slow"
+  },
+  "compactor": {
+    "model": "glm-5.3-flash",
+    "effort": "low",
+    "speed": "slow"
+  }
+}

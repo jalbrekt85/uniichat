@@ -49,13 +49,14 @@ const GLM: Model[] = [
   { label: "glm-5.3",     id: "glm-5.3",     speeds: ["slow"] },
   { label: "glm-5.3-flash", id: "glm-5.3-flash", speeds: ["slow"] },
 ];
-// the local oMLX server: the ids are the model directory names it serves
+// the local oMLX server: a model's label is its id, the string the server
+// itself reports, so nothing translates between models.json and the request
 const LOCAL: Model[] = [
-  { label: "local-glm",  id: "glm-5.3-flash", speeds: ["slow"] },
-  { label: "local-qwen", id: "qwen3.6-35b",   speeds: ["slow"] },
-  { label: "local-mid",  id: "qwen3-4b",      speeds: ["slow"] },
-  { label: "local-2507", id: "Qwen3-4B-Instruct-2507-4bit", speeds: ["slow"] },
-  { label: "local-smoke", id: "qwen2.5-0.5b", speeds: ["slow"] },
+  { label: "glm-5.3-flash", id: "glm-5.3-flash", speeds: ["slow"] },
+  { label: "qwen3.6-35b", id: "qwen3.6-35b",   speeds: ["slow"] },
+  { label: "qwen3-4b", id: "qwen3-4b",      speeds: ["slow"] },
+  { label: "Qwen3-4B-Instruct-2507-4bit", id: "Qwen3-4B-Instruct-2507-4bit", speeds: ["slow"] },
+  { label: "qwen2.5-0.5b", id: "qwen2.5-0.5b", speeds: ["slow"] },
 ];
 
 // each vendor's models, at the speeds it runs them
@@ -68,7 +69,7 @@ const MODELS: Record<Vendor, Model[]> = {
 
 export const EFFORTS = ["low", "medium", "high", "xhigh", "max"];
 
-const SPEEDS = ["slow", "fast", "ultrafast"];
+export const SPEEDS = ["slow", "fast", "ultrafast"];
 
 export const LABELS = [...new Set(Object.values(MODELS).flat().map((m) => m.label))];
 

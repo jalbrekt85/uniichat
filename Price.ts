@@ -73,7 +73,9 @@ export namespace Price {
     const rate   = long ?? RATES[model];
     const minute = MINUTES[model];
     if (rate === undefined && minute === undefined) {
-      throw new Error("no price for " + model);
+      // self-hosted models have no meter: an id without a rate is free,
+      // so a model added to models.json alone never needs a price here
+      return 0;
     }
     const tokens = rate === undefined ? 0 : use.input * rate.input + use.write * rate.write + use.read * rate.read + use.output * rate.output;
     const audio  = minute === undefined ? 0 : (use.seconds / 60) * minute * 1e6;

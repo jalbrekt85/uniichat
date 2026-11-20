@@ -230,8 +230,6 @@ export async function start(opts: StartOptions = {}): Promise<void> {
     device = spawn_script("device", "Device.ts", [], {
       UNII_URL: SITE,
       UNII_WORK: work,
-      // only an explicit name overrides Device.ts's own (scutil on macOS)
-      ...(process.env.UNII_DEVICE === undefined ? {} : { UNII_DEVICE: process.env.UNII_DEVICE }),
       UNII_DEVICE_LOG: path.join(LOGS, "device.log"),
     }, ROOT);
     if (!opts.quiet) {

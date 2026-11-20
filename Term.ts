@@ -21,6 +21,7 @@ import * as child from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import type { Kind } from "./AskAI.ts";
+import { DEVICE } from "./DeviceName.ts";
 import * as Import from "./Import.ts";
 import { Machine, type Job } from "./Machine.ts";
 import * as Paint from "./Paint.ts";
@@ -107,10 +108,7 @@ const CHECKED = HOME + "/check.json";
 const SELF    = HOME + "/self";
 const DAY     = 86400000;
 
-// this device's name, as the agent sees it: on macOS its local host name
-// (Bonjour's, unique on its network), else the host's
-const LOCAL  = process.platform === "darwin" ? child.spawnSync("scutil", ["--get", "LocalHostName"]).stdout?.toString().trim() : "";
-const DEVICE = LOCAL || os.hostname();
+// this device's name, as the agent sees it: DeviceName.ts names it once
 
 // where the agent's tools work on this device: in WORK/main (the agent)
 // and WORK/<name> (each subagent)

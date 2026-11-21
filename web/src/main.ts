@@ -1171,6 +1171,8 @@ let ctx_built = false;
 let ctx_raf = 0;
 const ctx_segs = new Map<string, HTMLElement>();
 const ctx_vals = new Map<string, HTMLElement>();
+const ctx_rows = new Map<string, HTMLElement>();
+let ctx_order = CTX_PARTS.map(([key]) => key).join(",");
 let ctx_total: HTMLElement | null = null;
 let ctx_card: HTMLElement | null = null;
 
@@ -1200,6 +1202,7 @@ function build_ctx(): void {
       + '<span class="name">' + label + '</span>'
       + '<span class="val">—</span>';
     legend.appendChild(li);
+    ctx_rows.set(key, li);
     const val = li.querySelector<HTMLElement>(".val");
     if (val !== null) {
       ctx_vals.set(key, val);
@@ -1207,6 +1210,28 @@ function build_ctx(): void {
     CTX_SHOWN[key] = 0;
   }
   card.classList.add("idle");
+}
+
+// the biggest part first, in the legend and the bar; only touches the DOM
+// when the order actually changes
+function reorder_ctx(order: string[]): void {
+  const sig = order.join(",");
+  if (sig === ctx_order) {
+    return;
+  }
+  ctx_order = sig;
+  const bar = document.getElementById("ctx-bar");
+  const legend = document.getElementById("ctx-legend");
+  for (const key of order) {
+    const row = ctx_rows.get(key);
+    if (row !== undefined && legend !== null) {
+      legend.appendChild(row);
+    }
+    const seg = ctx_segs.get(key);
+    if (seg !== undefined && bar !== null) {
+      bar.appendChild(seg);
+    }
+  }
 }
 
 // the numbers count up while the bar glides, so a new turn reads as one
@@ -1247,8 +1272,13 @@ function draw_context(m: Extract<View.Server, { $: "context" }>): void {
   const window = m.window ?? 81920;
   const bytes = ctx_bytes(m);
   const to: Record<string, number> = {};
-  for (const [key, label] of CTX_PARTS) {
+  for (const [key] of CTX_PARTS) {
     to[key] = ctx_tok(m, bytes[key] ?? 0);
+  }
+  reorder_ctx(
+    CTX_PARTS.map(([key]) => key).sort((a, b) => (to[b] ?? 0) - (to[a] ?? 0)),
+  );
+  for (const [key, label] of CTX_PARTS) {
     const seg = ctx_segs.get(key);
     if (seg !== undefined) {
       seg.style.width = Math.max(0, Math.min(100, (to[key] / window) * 100)) + "%";
@@ -1285,6 +1315,7 @@ function reset_ctx(): void {
   }
   ctx_card?.classList.add("idle");
   ctx_card?.classList.remove("pulse");
+  reorder_ctx(CTX_PARTS.map(([key]) => key));
 }
 
 function hear(msg: View.Server): void {

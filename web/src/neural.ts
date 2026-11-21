@@ -122,7 +122,7 @@ export function mountNeural(host: HTMLElement, dark: boolean, onSelect: (node: S
   const pickMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
   type Materials = { soma: THREE.MeshBasicMaterial; dend: THREE.LineBasicMaterial; glow: THREE.SpriteMaterial };
   const materials = new Map<string, Materials>();
-  // the node objects, by id: hover scales the one under the pointer
+  // the node objects, by id: the one under the pointer grows a little
   const nodeGroups = new Map<string, THREE.Group>();
   let hovered: string | null = null;
   const neuron_materials = (color: string): Materials => {
@@ -170,11 +170,17 @@ export function mountNeural(host: HTMLElement, dark: boolean, onSelect: (node: S
         return;
       }
       if (hovered !== null) {
-        nodeGroups.get(hovered)?.scale.setScalar(1);
+        const old = nodeGroups.get(hovered);
+        if (old !== undefined) {
+          old.scale.setScalar(1);
+        }
       }
       hovered = id;
       if (id !== null) {
-        nodeGroups.get(id)?.scale.setScalar(1.8);
+        const now = nodeGroups.get(id);
+        if (now !== undefined) {
+          now.scale.setScalar(1.25);
+        }
       }
     })
     .onEngineTick(() => {
@@ -246,6 +252,18 @@ export function mountNeural(host: HTMLElement, dark: boolean, onSelect: (node: S
       return;
     }
   });
+
+  // leaving the canvas never fires a hover(null) here; clear it by hand so
+  // the grown node cannot stay grown
+  const clear_hover = (): void => {
+    if (hovered !== null) {
+      nodeGroups.get(hovered)?.scale.setScalar(1);
+      hovered = null;
+    }
+    host.style.cursor = "grab";
+  };
+  host.addEventListener("pointerleave", clear_hover);
+  addEventListener("blur", clear_hover);
 
   const fit = (): void => {
     const w = host.clientWidth;

@@ -3376,3 +3376,115 @@ footer {
   .thought.in, .thought.out { animation-name: thought-fade; }
   @keyframes thought-fade { from { opacity: 0; } to { opacity: 1; } }
 }
+
+
+/* Thought, refined: smaller, translucent plush glass, no solid lobes. */
+.thought { max-width: 260px; }
+.thought-float { display: flex; flex-direction: column; align-items: flex-start; }
+.thought.below .thought-float { flex-direction: column-reverse; }
+.thought-cloud {
+  max-width: 250px;
+  min-width: 170px;
+  padding: 12px 26px 11px 15px;
+  border-radius: 18px;
+  background: linear-gradient(155deg,
+    color-mix(in oklab, var(--pl-light) 88%, transparent),
+    color-mix(in oklab, var(--pl-deep) 84%, transparent));
+  border: 1px solid color-mix(in oklab, var(--pl-light) 45%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 26%), inset 0 1px 0 rgb(255 255 255 / 38%);
+  font: 500 11.5px/1.45 ui-rounded, "SF Pro Rounded", var(--sans);
+}
+.thought-cloud::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: auto;
+  height: auto;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 28%, rgb(255 255 255 / 22%) 45%, transparent 62%);
+  opacity: 0;
+  pointer-events: none;
+}
+.thought-cloud::after { content: none; }
+.thought.in .thought-cloud::before { animation: thought-sweep .7s ease-out 90ms both; }
+#thought-text { z-index: 2; animation: thought-text-in .26s ease 120ms both; }
+.thought-close { z-index: 3; top: 6px; right: 7px; width: 15px; height: 15px; font: 700 10px/1 var(--sans); }
+.thought-tail { padding: 2px 0 0 var(--tail-x, 22px); gap: 3px; }
+.thought.below .thought-tail { padding: 0 0 2px var(--tail-x, 22px); }
+.thought-tail i:nth-child(1) { width: 7px; height: 7px; }
+.thought-tail i:nth-child(2) { width: 4.5px; height: 4.5px; }
+.thought-tail i:nth-child(3) { width: 3px; height: 3px; }
+.thought-tail i { opacity: .85; }
+.thought.in .thought-float { animation: thought-float 6s ease-in-out infinite; }
+.thought.in .thought-cloud { animation: thought-breathe 5.2s ease-in-out 600ms infinite; }
+.thought.in .thought-tail i { animation: thought-dot-in .24s cubic-bezier(.34, 1.56, .64, 1) both, thought-dot-bob 2.8s ease-in-out .5s infinite; }
+.thought.in .thought-tail i:nth-child(2) { animation-delay: 40ms, .7s; }
+.thought.in .thought-tail i:nth-child(3) { animation-delay: 80ms, .9s; }
+.thought-close:focus-visible { outline: 1.5px solid var(--pl-ink); outline-offset: 2px; }
+@keyframes thought-text-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@keyframes thought-sweep { 0% { opacity: 0; transform: translateX(-40%); } 35% { opacity: .9; } 100% { opacity: 0; transform: translateX(40%); } }
+@keyframes thought-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes thought-dot-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
+
+
+/* The thought sits in the right column, above the meter: never over the
+   chat. The tail points up toward the skull. */
+@media (min-width: 1350px) {
+  .thought {
+    left: calc((var(--free) + 100vw) / 2);
+    right: auto;
+    top: 52%;
+    transform: translateX(-50%);
+    max-width: min(300px, calc(var(--skull) - 96px));
+  }
+}
+@media (max-width: 1349px) {
+  .thought { display: none !important; }
+}
+
+/* Cult UI Speech Bubble asset, sized down for the thought. */
+.thought-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 250px;
+  min-width: 150px;
+  padding: 10px 14px 10px 13px;
+  border-radius: 15px;
+  border: 1px solid color-mix(in oklab, var(--pl-light) 34%, transparent);
+  background: linear-gradient(150deg,
+    color-mix(in oklab, var(--pl-light) 78%, transparent),
+    color-mix(in oklab, var(--pl-deep) 80%, transparent));
+  color: var(--pl-ink);
+  box-shadow: 0 8px 22px rgb(0 0 0 / 24%), inset 0 1px 0 rgb(255 255 255 / 30%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font: 500 11px/1.45 ui-rounded, "SF Pro Rounded", var(--sans);
+  pointer-events: none;
+}
+.thought-card .thought-text { pointer-events: auto; }
+.thought-card .thought-tail {
+  position: absolute;
+  right: 12px;
+  bottom: -13px;
+  width: 26px;
+  height: 22px;
+  overflow: visible;
+  opacity: .95;
+  pointer-events: none;
+}
+.thought-card .thought-tail path { fill: color-mix(in oklab, var(--pl-deep) 84%, transparent); }
+.thought-card .thought-close {
+  top: 5px;
+  right: 5px;
+  width: 14px;
+  height: 14px;
+  font-size: 9px;
+  z-index: 3;
+}
+.thought.in .thought-card .thought-text { animation: thought-text-in .26s ease .1s both; }
+.thought-float, .thought.below .thought-float { display: block; }
+.thought-tail, .thought.below .thought-tail { display: none; }

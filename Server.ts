@@ -1885,7 +1885,19 @@ export namespace Bot {
     if (chat.mem.bot === null) {
       chat.mem.bot = bot_default();
     }
+    if (bot_name(chat.mem.bot.avatar) === null) {
+      chat.mem.bot.avatar = "clover";
+    }
     return chat.mem.bot;
+  }
+
+  // the session tile's counter: floor(size(main.index)/16), as Sessions.info uses
+  function counter_of(chat: Chat): number {
+    try {
+      return Math.floor(fs.statSync(chat.mem.dir + "/main.index").size / 16);
+    } catch {
+      return chat.mem.count;
+    }
   }
 
   function save(chat: Chat): void {
@@ -1940,7 +1952,7 @@ export namespace Bot {
 
   export function trigger(chat: Chat): void {
     const s = state(chat);
-    const counter = chat.mem.count;
+    const counter = counter_of(chat);
     if (s.due === null && s.base === null) {
       const x = BOT_X_MIN + Math.floor(Math.random() * (BOT_X_MAX - BOT_X_MIN + 1));
       s.base = counter;
@@ -1985,7 +1997,7 @@ export namespace Bot {
         ...Chat.share(chat),
         effort: "low",
         system,
-        blocks: [{ text: body.text }],
+        blocks: [{ text: "Recent raw transcript (oldest first; the top may be clipped):\n\n---\n" + body.text + "\n---" }],
         imgs: [],
         searches: 0,
         server: "",
@@ -2016,7 +2028,7 @@ export namespace Bot {
       s.pending = { text, at: s.at };
       save(chat);
       Debug.record("bot", chat.session, { phase: "shown", counter, from: s.from, base: s.base, thoughtAt: s.at, chars: text.length, text });
-      Chat.all(chat, { $: "thought", text, at: s.at });
+      Chat.all(chat, { $: "thought", text, at: s.at, session: chat.session });
     } catch (err) {
       Debug.record("bot", chat.session, { phase: "fail", why: String((err as Error)?.message ?? err) });
     }

@@ -15,8 +15,8 @@
 <title>UniiChat</title>
 <link rel="icon" href="/favicon.svg">
 <link rel="stylesheet" href="/style.css?v=20261119l">
-<link rel="stylesheet" href="/redesign.css?v=20261122d">
-<script type="module" src="/app.js?v=20261121ai"></script>
+<link rel="stylesheet" href="/redesign.css?v=20261122f">
+<script type="module" src="/app.js?v=20261121ak"></script>
 </head>
 <!-- the page, as a guest sees it until signed in (web/src/main.ts) -->
 <body class="guest">
@@ -48,13 +48,7 @@
   <button class="credits" data-go="/account"></button>
   <button class="menu" popovertarget="menu" aria-label="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"/></svg></button>
 </header>
-<div id="thought" class="thought" hidden role="status" aria-live="polite" aria-atomic="true">
-  <div class="thought-cloud">
-    <button id="thought-close" class="thought-close" type="button" aria-label="Dismiss thought" title="Dismiss thought">×</button>
-    <p id="thought-text"></p>
-  </div>
-  <div class="thought-tail" aria-hidden="true"><i></i><i></i><i></i></div>
-</div>
+<div id="thought" class="thought" hidden role="status" aria-live="polite" aria-atomic="true"></div>
 <main id="log">
   <section id="welcome" hidden>
     <div id="fx-welcome" class="fx-welcome-art" aria-hidden="true"></div>

@@ -114,7 +114,7 @@ export type Server =
   | ({ $: "entry"; agent?: string; id?: number } & Entry)
   | { $: "delta"; agent?: string; kind: Kind; text: string; fresh?: boolean }
   | { $: "live"; agent?: string; live: Live[] }
-  | { $: "thought"; text: string; at: number }
+  | { $: "thought"; text: string; at: number; session: string }
   | { $: "thought-close" }
   | ({ $: "context" } & ContextParts & { window: number | null; trigger: number | null })
   | ({ $: "state" } & State)

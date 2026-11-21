@@ -700,14 +700,14 @@ function isLite(): boolean {
 // ---------------------------------------------------------------------------
 // Shell islands
 
-type ShellState = { busy: boolean; wait: string; agents: string[]; welcome: boolean; recording: boolean; stop: boolean; text: boolean; tree: SkullTree; bot: string; setBot: (name: string) => void };
-let shell: ShellState = { busy: false, wait: "", agents: [], welcome: false, recording: false, stop: false, text: false, tree: SKULL_SEED, bot: "clover", setBot: () => {} };
+type ShellState = { busy: boolean; wait: string; agents: string[]; welcome: boolean; recording: boolean; stop: boolean; text: boolean; tree: SkullTree; bot: string; setBot: (name: string) => void; session: string };
+let shell: ShellState = { busy: false, wait: "", agents: [], welcome: false, recording: false, stop: false, text: false, tree: SKULL_SEED, bot: "clover", setBot: () => {}, session: "" };
 const shellSubs = new Set<(s: ShellState) => void>();
 
 export function setShell(next: Partial<ShellState>): void {
   const prev = shell;
   shell = { ...shell, ...next };
-  if (prev.busy !== shell.busy || prev.wait !== shell.wait || prev.agents.join() !== shell.agents.join() || prev.welcome !== shell.welcome || prev.recording !== shell.recording || prev.stop !== shell.stop || prev.text !== shell.text || prev.tree !== shell.tree || prev.bot !== shell.bot) {
+  if (prev.busy !== shell.busy || prev.wait !== shell.wait || prev.agents.join() !== shell.agents.join() || prev.welcome !== shell.welcome || prev.recording !== shell.recording || prev.stop !== shell.stop || prev.text !== shell.text || prev.tree !== shell.tree || prev.bot !== shell.bot || prev.session !== shell.session) {
     shellSubs.forEach((fn) => fn(shell));
   }
 }
@@ -732,6 +732,10 @@ function BrandIsland(): React.ReactElement | null {
   const lite = useMemo(() => isLite(), []);
   const s = useShell();
   const [open, setOpen] = useState(false);
+  useEffect(() => { setOpen(false); }, [s.session]);
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("unii:bot-picker", { detail: open }));
+  }, [open]);
   if (lite) return null;
   const bot = (BOTS as readonly string[]).includes(s.bot) ? s.bot : "clover";
   return (

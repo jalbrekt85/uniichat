@@ -17,6 +17,7 @@ import * as Import from "../../Import.ts";
 import { theme_css } from "../../Theme.ts";
 import * as View from "../../View.ts";
 import { BOT_LIFE_MS, BOT_PALETTE } from "../../Bot.ts";
+import { speech_bubble } from "./speech-bubble";
 import * as Html from "./Html.ts";
 import { mountShell, setPendingPics, setShell } from "./fx-react";
 import { initPolish, playSound, setSound, soundEnabled } from "./polish";
@@ -1091,6 +1092,7 @@ function switch_session(id: string, push = true): void {
   if (want === v.session) {
     return;
   }
+  thought_pending = null;
   thought_hide(false);
   link_close?.();
   link_close = null;
@@ -1116,6 +1118,7 @@ addEventListener("popstate", () => {
 // only by its agents, an agent's page saying whether it runs
 // the bot's thought bubble: a plush cloud above its avatar, five minutes
 let thought_timer = 0;
+let thought_pending: { text: string; at: number } | null = null;
 
 function thought_hide(send: boolean): void {
   const el = document.getElementById("thought");
@@ -1124,7 +1127,15 @@ function thought_hide(send: boolean): void {
   }
   clearTimeout(thought_timer);
   thought_timer = 0;
-  if (el === null || el.hidden) {
+  if (el === null) {
+    return;
+  }
+  if (el.hidden) {
+    const next = thought_pending;
+    thought_pending = null;
+    if (next !== null) {
+      thought_render(next.text, next.at);
+    }
     return;
   }
   el.classList.remove("in");
@@ -1132,31 +1143,24 @@ function thought_hide(send: boolean): void {
   window.setTimeout(() => {
     el.hidden = true;
     el.classList.remove("out");
+    const next = thought_pending;
+    thought_pending = null;
+    if (next !== null) {
+      thought_render(next.text, next.at);
+    }
   }, 380);
 }
 
 function thought_place(): void {
   const el = document.getElementById("thought");
-  const avatar = document.querySelector<HTMLElement>("#fx-brand .bot-brand");
-  if (el === null || avatar === null || el.hidden) {
-    return;
+  if (el !== null) {
+    el.classList.add("below");
   }
-  const a = avatar.getBoundingClientRect();
-  const w = el.offsetWidth;
-  const h = el.offsetHeight;
-  el.style.left = Math.max(12, Math.min(a.left - 8, innerWidth - w - 12)) + "px";
-  let top = a.top - h - 14;
-  const above = top >= 12;
-  if (!above) {
-    top = a.bottom + 14;
-  }
-  el.style.top = top + "px";
-  el.classList.toggle("below", !above);
 }
 
-function thought_show(text: string, at: number): void {
+function thought_render(text: string, at: number): void {
   const el = document.getElementById("thought");
-  const body = document.getElementById("thought-text");
+  const body = document.querySelector<HTMLElement>("#thought .thought-text");
   if (el === null || body === null) {
     return;
   }
@@ -1177,9 +1181,39 @@ function thought_show(text: string, at: number): void {
   thought_timer = window.setTimeout(() => thought_hide(true), left);
 }
 
+function thought_show(text: string, at: number): void {
+  const el = document.getElementById("thought");
+  if (el === null) {
+    return;
+  }
+  if (!el.hidden) {
+    thought_pending = { text, at };
+    if (!el.classList.contains("out")) {
+      thought_hide(false);
+    }
+    return;
+  }
+  thought_render(text, at);
+}
+
 function init_thought(): void {
-  document.getElementById("thought-close")?.addEventListener("click", () => thought_hide(true));
-  addEventListener("resize", thought_place);
+  const el = document.getElementById("thought");
+  if (el === null) {
+    return;
+  }
+  const bubble = speech_bubble();
+  bubble.root.querySelector(".thought-close")?.addEventListener("click", () => thought_hide(true));
+  bubble.root.querySelector(".thought-close")?.addEventListener("keydown", (ev) => {
+    if ((ev as KeyboardEvent).key === "Escape") {
+      thought_hide(true);
+    }
+  });
+  el.append(bubble.root);
+  addEventListener("unii:bot-picker", (ev) => {
+    if ((ev as CustomEvent).detail === true && !el.hidden) {
+      thought_hide(false);
+    }
+  });
 }
 
 // the prompt's body, by part, as a stacked meter under the skull
@@ -1410,6 +1444,9 @@ function hear(msg: View.Server): void {
     return;
   }
   if (msg.$ === "thought") {
+    if (msg.session !== undefined && msg.session !== v.session) {
+      return;
+    }
     thought_show(msg.text, msg.at);
     return;
   }
@@ -2099,7 +2136,7 @@ function bars(): void {
   const activity = document.getElementById("fx-activity");
   if (activity !== null) activity.hidden = output;
   document.body.classList.toggle("has-output", output);
-  setShell({ busy: v.busy, wait: v.wait, agents: v.agents, recording: P.rec !== null, welcome: empty, stop, text: output, tree: tree_for_view(), bot: v.bot, setBot: (name: string) => View.link_send(v, { $: "bot-avatar", name } as never) });
+  setShell({ busy: v.busy, wait: v.wait, agents: v.agents, recording: P.rec !== null, welcome: empty, stop, text: output, tree: tree_for_view(), bot: v.bot, session: v.session, setBot: (name: string) => View.link_send(v, { $: "bot-avatar", name } as never) });
   jump_update();
   refreshPalette();
 }

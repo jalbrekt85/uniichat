@@ -1593,16 +1593,16 @@ header > .sound[aria-pressed="true"] {
 .skull-head {
   position: absolute;
   top: max(20px, env(safe-area-inset-top));
-  left: var(--free);
-  right: 0;
+  left: calc((var(--free) + 100vw) / 2 - 230px);
+  right: auto;
+  width: 460px;
   padding: 0 24px;
   z-index: 2;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
-  text-align: center;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  text-align: left;
   pointer-events: none;
   color: var(--soft);
   font: 8px/1.3 var(--sans);
@@ -3214,7 +3214,6 @@ footer {
 .ctx-legend .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ctx-legend .val { margin-left: auto; color: var(--mid); font-variant-numeric: tabular-nums; }
 
-/* the skull stands alone: its caption and tree hint are not shown (the
-   model's CC BY credit stays on #skull-pane's title attribute) */
-#skull-pane .skull-head,
+/* the skull's caption below it is not shown (the model's CC BY credit
+   stays on #skull-pane's title attribute) */
 #skull-pane .skull-credit { display: none; }

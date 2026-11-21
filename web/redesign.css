@@ -3538,13 +3538,13 @@ footer {
 }
 .thought-card .thought-tail {
   display: block;
-  left: calc(-1 * var(--tail-w, 30px));
+  left: var(--tail-x, 16px);
   right: auto;
-  top: var(--tail-y, 18px);
+  top: -19px;
   bottom: auto;
-  width: var(--tail-w, 30px);
-  height: 26px;
-  transform: rotate(90deg);
+  width: 26px;
+  height: 20px;
+  transform: rotate(180deg);
   opacity: 1;
   overflow: visible;
 }
@@ -3556,3 +3556,55 @@ footer {
 }
 .thought-card .thought-close { top: 3px; right: 4px; }
 @media (max-width: 1349px) { .thought { display: flex !important; } }
+
+
+/* The thought bubble is Tippy's box and arrow; the palette and 3D lift are
+   the only styling here. */
+.tippy-box[data-theme~="thought"] {
+  position: relative;
+  max-width: 430px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in oklab, #fff 42%, transparent);
+  background: linear-gradient(150deg,
+    color-mix(in oklab, var(--pl-light) 97%, transparent),
+    color-mix(in oklab, var(--pl-deep) 95%, transparent));
+  color: var(--pl-ink);
+  box-shadow:
+    0 26px 48px rgb(0 0 0 / 58%),
+    0 8px 16px rgb(0 0 0 / 38%),
+    0 1px 0 rgb(255 255 255 / 60%) inset,
+    0 -2px 8px rgb(0 0 0 / 18%) inset;
+  backdrop-filter: blur(14px) saturate(1.08);
+  -webkit-backdrop-filter: blur(14px) saturate(1.08);
+  font: 500 10.5px/1.4 ui-rounded, "SF Pro Rounded", var(--sans);
+  animation: thought-pop 520ms cubic-bezier(.2, .9, .3, 1.2) both;
+  outline: 0;
+}
+.tippy-box[data-theme~="thought"] .tippy-content { position: relative; z-index: 2; padding: 9px 30px 9px 12px; }
+.tippy-box[data-theme~="thought"] .thought-text { position: relative; z-index: 2; }
+.tippy-box[data-theme~="thought"] .thought-close {
+  position: absolute;
+  z-index: 3;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--pl-ink) 14%, transparent);
+  color: color-mix(in oklab, var(--pl-ink) 78%, transparent);
+  font: 700 10px/1 var(--sans);
+  cursor: pointer;
+}
+.tippy-box[data-theme~="thought"] .thought-close:hover { background: color-mix(in oklab, var(--pl-ink) 24%, transparent); color: var(--pl-ink); }
+.tippy-box[data-theme~="thought"] .thought-close:focus-visible { outline: 1.5px solid var(--pl-ink); outline-offset: 2px; }
+.tippy-box[data-theme~="thought"] .tippy-arrow { position: absolute; width: 18px; height: 18px; color: color-mix(in oklab, var(--pl-deep) 95%, transparent); }
+.tippy-box[data-theme~="thought"] .tippy-arrow::before { content: ""; position: absolute; border-color: transparent; border-style: solid; }
+.tippy-box[data-theme~="thought"][data-placement^="bottom"] > .tippy-arrow { top: -9px; }
+.tippy-box[data-theme~="thought"][data-placement^="bottom"] > .tippy-arrow::before { border-width: 0 9px 9px; border-bottom-color: currentColor; top: -9px; }
+.tippy-box[data-theme~="thought"][data-placement^="top"] > .tippy-arrow { bottom: -9px; }
+.tippy-box[data-theme~="thought"][data-placement^="top"] > .tippy-arrow::before { border-width: 9px 9px 0; border-top-color: currentColor; top: -9px; }
+@keyframes thought-pop { from { opacity: 0; transform: translateY(6px) scale(.97); } to { opacity: 1; transform: none; } }

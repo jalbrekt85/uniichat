@@ -17,7 +17,7 @@ import * as Import from "../../Import.ts";
 import { theme_css } from "../../Theme.ts";
 import * as View from "../../View.ts";
 import { BOT_LIFE_MS, BOT_PALETTE } from "../../Bot.ts";
-import { speech_bubble } from "./speech-bubble";
+import tippy, { type Instance } from "tippy.js";
 import * as Html from "./Html.ts";
 import { mountShell, setPendingPics, setShell } from "./fx-react";
 import { initPolish, playSound, setSound, soundEnabled } from "./polish";
@@ -1116,120 +1116,118 @@ addEventListener("popstate", () => {
 // a pick changed shows what it is now (a click on a knob moves it). The
 // rows change with what they show: a state (credits, ~10/s importing)
 // only by its agents, an agent's page saying whether it runs
-// the bot's thought bubble: a plush cloud above its avatar, five minutes
+// the bot's thought bubble, rendered by Tippy: its box, arrow and
+// anchoring are the library's; this only feeds text, palette and the timer
+let thought_instance: Instance | null = null;
 let thought_timer = 0;
 let thought_pending: { text: string; at: number } | null = null;
+let thought_content: HTMLElement | null = null;
 
-function thought_hide(send: boolean): void {
-  const el = document.getElementById("thought");
-  if (send) {
-    View.link_send(v, { $: "thought-close" } as never);
+function thought_body(): HTMLElement {
+  if (thought_content !== null) {
+    return thought_content;
   }
-  clearTimeout(thought_timer);
-  thought_timer = 0;
-  if (el === null) {
-    return;
-  }
-  if (el.hidden) {
-    const next = thought_pending;
-    thought_pending = null;
-    if (next !== null) {
-      thought_render(next.text, next.at);
+  const el = document.createElement("div");
+  el.className = "thought-body";
+  el.innerHTML = '<span class="thought-text"></span><button class="thought-close" type="button" aria-label="Dismiss thought" title="Dismiss thought">×</button>';
+  const close = el.querySelector(".thought-close");
+  close?.addEventListener("click", () => thought_hide(true));
+  close?.addEventListener("keydown", (ev) => {
+    if ((ev as KeyboardEvent).key === "Escape") {
+      thought_hide(true);
     }
-    return;
-  }
-  el.classList.remove("in");
-  el.classList.add("out");
-  window.setTimeout(() => {
-    el.hidden = true;
-    el.classList.remove("out");
-    const next = thought_pending;
-    thought_pending = null;
-    if (next !== null) {
-      thought_render(next.text, next.at);
-    }
-  }, 380);
+  });
+  thought_content = el;
+  return el;
 }
 
-function thought_place(): void {
-  const el = document.getElementById("thought");
-  const avatar = document.querySelector<HTMLElement>("#fx-brand .bot-brand");
-  if (el === null || el.hidden || avatar === null) {
-    return;
+function thought_tip(): Instance | null {
+  if (thought_instance !== null) {
+    return thought_instance;
   }
-  const a = avatar.getBoundingClientRect();
-  const brand = document.querySelector<HTMLElement>("header > .brand");
-  const after = brand !== null && brand.offsetParent !== null ? brand.getBoundingClientRect().right : a.right;
-  const w = el.offsetWidth;
-  const h = el.offsetHeight;
-  let left = after + 12;
-  if (left + w > innerWidth - 12) {
-    left = Math.max(12, a.left - w - 12);
-    el.classList.add("flip");
-  } else {
-    el.classList.remove("flip");
+  const anchor = document.querySelector<HTMLElement>("#fx-brand .bot-brand");
+  if (anchor === null) {
+    return null;
   }
-  const top = Math.max(10, a.top - 6);
-  el.style.left = left + "px";
-  el.style.top = top + "px";
-  el.style.setProperty("--tail-w", Math.max(30, left - a.right - 2) + "px");
-  el.style.setProperty("--tail-y", Math.max(6, Math.min(h - 22, a.top + a.height / 2 - top - 11)) + "px");
+  thought_instance = tippy(anchor, {
+    content: thought_body(),
+    trigger: "manual",
+    placement: "bottom",
+    arrow: true,
+    interactive: true,
+    offset: [0, 8],
+    maxWidth: 430,
+    theme: "thought",
+    animation: "fade",
+    appendTo: () => document.body,
+    onHidden: () => {
+      const next = thought_pending;
+      thought_pending = null;
+      if (next !== null) {
+        thought_render(next.text, next.at);
+      }
+    },
+  });
+  return thought_instance;
 }
 
 function thought_render(text: string, at: number): void {
-  const el = document.getElementById("thought");
-  const body = document.querySelector<HTMLElement>("#thought .thought-text");
-  if (el === null || body === null) {
+  const tip = thought_tip();
+  if (tip === null) {
     return;
   }
   const pal = BOT_PALETTE[(v.bot as keyof typeof BOT_PALETTE)] ?? BOT_PALETTE.clover;
-  el.style.setProperty("--pl-light", pal.light);
-  el.style.setProperty("--pl-deep", pal.deep);
-  el.style.setProperty("--pl-ink", pal.ink);
-  el.style.setProperty("--pl-accent", pal.accent);
-  body.textContent = text;
-  el.hidden = false;
-  el.classList.remove("out");
-  el.classList.remove("in");
-  void el.offsetWidth;
-  el.classList.add("in");
-  thought_place();
+  const box = tip.popper;
+  box.style.setProperty("--pl-light", pal.light);
+  box.style.setProperty("--pl-deep", pal.deep);
+  box.style.setProperty("--pl-ink", pal.ink);
+  box.style.setProperty("--pl-accent", pal.accent);
+  const body = box.querySelector<HTMLElement>(".thought-text");
+  if (body !== null) {
+    body.textContent = text;
+  }
+  tip.show();
   clearTimeout(thought_timer);
-  const left = Math.max(0, at + BOT_LIFE_MS - Date.now());
-  thought_timer = window.setTimeout(() => thought_hide(true), left);
+  thought_timer = window.setTimeout(() => thought_hide(true), Math.max(0, at + BOT_LIFE_MS - Date.now()));
 }
 
 function thought_show(text: string, at: number): void {
-  const el = document.getElementById("thought");
-  if (el === null) {
+  const tip = thought_tip();
+  if (tip === null) {
     return;
   }
-  if (!el.hidden) {
+  if (tip.state.isVisible) {
     thought_pending = { text, at };
-    if (!el.classList.contains("out")) {
-      thought_hide(false);
-    }
+    thought_hide(false);
     return;
   }
   thought_render(text, at);
 }
 
-function init_thought(): void {
-  const el = document.getElementById("thought");
-  if (el === null) {
+function thought_hide(send: boolean): void {
+  if (send) {
+    View.link_send(v, { $: "thought-close" } as never);
+  }
+  clearTimeout(thought_timer);
+  thought_timer = 0;
+  const tip = thought_tip();
+  if (tip === null) {
     return;
   }
-  const bubble = speech_bubble();
-  bubble.root.querySelector(".thought-close")?.addEventListener("click", () => thought_hide(true));
-  bubble.root.querySelector(".thought-close")?.addEventListener("keydown", (ev) => {
-    if ((ev as KeyboardEvent).key === "Escape") {
-      thought_hide(true);
+  if (tip.state.isVisible) {
+    tip.hide();
+  } else {
+    const next = thought_pending;
+    thought_pending = null;
+    if (next !== null) {
+      thought_render(next.text, next.at);
     }
-  });
-  el.append(bubble.root);
-  addEventListener("resize", thought_place);
+  }
+}
+
+function init_thought(): void {
   addEventListener("unii:bot-picker", (ev) => {
-    if ((ev as CustomEvent).detail === true && !el.hidden) {
+    if ((ev as CustomEvent).detail === true) {
       thought_hide(false);
     }
   });

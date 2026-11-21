@@ -34,6 +34,7 @@
     "react-dom": "18.3.1",
     "thinking-orbs": "^0.3.2",
     "three": "^0.187.0",
+    "tippy.js": "^6.3.7",
     "voice-glow": "^0.5.0",
     "voice-ring": "^0.2.0"
   }

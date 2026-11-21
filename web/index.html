@@ -16,7 +16,7 @@
 <link rel="icon" href="/favicon.svg">
 <link rel="stylesheet" href="/style.css?v=20261119l">
 <link rel="stylesheet" href="/redesign.css?v=20261121u">
-<script type="module" src="/app.js?v=20261121v"></script>
+<script type="module" src="/app.js?v=20261121z"></script>
 </head>
 <!-- the page, as a guest sees it until signed in (web/src/main.ts) -->
 <body class="guest">
@@ -74,7 +74,7 @@
 <button id="col-left" class="col-resize" type="button" role="separator" aria-orientation="vertical" aria-label="Resize chat from the left" aria-valuemin="600" aria-valuemax="1280" aria-valuenow="760" data-size="760" title="Drag to resize · double-click to reset"></button>
 <button id="col-right" class="col-resize" type="button" role="separator" aria-orientation="vertical" aria-label="Resize chat from the right" aria-valuemin="600" aria-valuemax="1280" aria-valuenow="760" data-size="760" title="Drag to resize · double-click to reset"></button>
 <main id="account" hidden></main>
-<aside id="skull-pane" aria-label="Memory tree" title="Skull model: Jake K-H, CC BY 4.0">
+<aside id="skull-pane" aria-label="Memory tree · skull model Jake K-H, CC BY 4.0">
   <div id="fx-skull"></div>
   <section id="ctx" class="ctx" aria-label="Prompt context">
     <div class="ctx-card">
@@ -82,6 +82,7 @@
       <div class="ctx-bar" id="ctx-bar"><i class="ctx-tick" aria-hidden="true"></i></div>
       <ul class="ctx-legend" id="ctx-legend"></ul>
     </div>
+    <div id="ctx-tip" class="ctx-tip" hidden role="tooltip"></div>
   </section>
 </aside>
 <footer>

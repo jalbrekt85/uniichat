@@ -3221,3 +3221,23 @@ footer {
 /* 3d-force-graph's tooltip sits under the pointer; it must not eat the
    click meant for the node */
 #skull-pane .graph-tooltip { pointer-events: none; }
+
+/* the meter's legend tooltip: a small glass card, not the browser's */
+.ctx-tip {
+  position: fixed;
+  z-index: 40;
+  max-width: 220px;
+  padding: 7px 9px 8px;
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  background: color-mix(in oklab, var(--lift) 96%, transparent);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+  font: 9.5px/1.5 var(--mono);
+  color: var(--soft);
+  letter-spacing: -.005em;
+}
+.ctx-tip[hidden] { display: none; }
+.ctx-tip b { display: block; margin-bottom: 3px; color: var(--ink); font: 500 9.5px/1.4 var(--sans); letter-spacing: .08em; text-transform: uppercase; }
+.ctx-tip span { display: block; }

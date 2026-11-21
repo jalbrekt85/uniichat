@@ -1127,6 +1127,16 @@ const CTX_PARTS: Array<[string, string, string]> = [
   ["system", "system", "var(--mid)"],
 ];
 
+const CTX_SHOWN: Record<string, number> = {};
+let ctx_built = false;
+let ctx_raf = 0;
+const ctx_segs = new Map<string, HTMLElement>();
+const ctx_vals = new Map<string, HTMLElement>();
+const ctx_rows = new Map<string, HTMLElement>();
+let ctx_order = CTX_PARTS.map(([key]) => key).join(",");
+let ctx_total: HTMLElement | null = null;
+let ctx_card: HTMLElement | null = null;
+
 // the nine raw parts, merged to the five the meter shows; the log keeps
 // the nine, so a stored context from before the merge still draws
 function ctx_raw(m: Extract<View.Server, { $: "context" }>): Record<string, number> {
@@ -1150,33 +1160,42 @@ function ctx_tok(m: Extract<View.Server, { $: "context" }>, bytes: number): numb
   return m.total > 0 ? (bytes / m.total) * m.tokens : 0;
 }
 
-function ctx_title(m: Extract<View.Server, { $: "context" }>, key: string, label: string): string {
-  const r = ctx_raw(m);
-  const b = ctx_bytes(m);
-  const k = (bytes: number): string => (ctx_tok(m, bytes) / 1000).toFixed(1) + "k";
-  if (key === "tools") {
-    return label + " " + k(b.tools) + " · schemas " + k(Number(r.tools ?? 0)) + " + results " + k(Number(r.tool ?? 0));
+// what each bucket holds, in a line, for the legend's tooltip
+const CTX_DESC: Record<string, string> = {
+  tree: "Summaries of the conversation's memory, with the lines still shown raw.",
+  messages: "Your latest message, plus notes about dropped steps.",
+  images: "Images attached to your messages.",
+  agent: "This turn's thinking, text and tool calls.",
+  tools: "Tool definitions and the results they returned.",
+  system: "The system prompt and harness notes (devices, work in progress).",
+};
+
+function show_ctx_tip(row: HTMLElement, key: string, label: string): void {
+  const tip = document.getElementById("ctx-tip");
+  if (tip === null) {
+    return;
   }
-  if (key === "system") {
-    return label + " " + k(b.system) + " · prompt " + k(Number(r.system ?? 0)) + " + harness " + k(Number(r.harness ?? 0));
+  tip.innerHTML = "<b>" + label + "</b><span>" + (CTX_DESC[key] ?? "") + "</span>";
+  tip.hidden = false;
+  const r = row.getBoundingClientRect();
+  const tw = tip.offsetWidth;
+  const th = tip.offsetHeight;
+  const left = Math.max(8, Math.min(r.left, innerWidth - tw - 8));
+  let top = r.top - th - 6;
+  if (top < 8) {
+    top = r.bottom + 6;
   }
-  if (key === "messages") {
-    return label + " " + k(b.messages) + " · you " + k(Number(r.message ?? 0)) + " + notes " + k(Number(r.notes ?? 0));
-  }
-  return label + " " + k(b[key] ?? 0);
+  tip.style.left = left + "px";
+  tip.style.top = top + "px";
 }
 
-const CTX_SHOWN: Record<string, number> = {};
-let ctx_built = false;
-let ctx_raf = 0;
-const ctx_segs = new Map<string, HTMLElement>();
-const ctx_vals = new Map<string, HTMLElement>();
-const ctx_rows = new Map<string, HTMLElement>();
-let ctx_order = CTX_PARTS.map(([key]) => key).join(",");
-let ctx_total: HTMLElement | null = null;
-let ctx_card: HTMLElement | null = null;
+function hide_ctx_tip(): void {
+  const tip = document.getElementById("ctx-tip");
+  if (tip !== null) {
+    tip.hidden = true;
+  }
+}
 
-// the meter exists from the first paint; the data fills it in
 function build_ctx(): void {
   if (ctx_built) {
     return;
@@ -1203,6 +1222,8 @@ function build_ctx(): void {
       + '<span class="val">—</span>';
     legend.appendChild(li);
     ctx_rows.set(key, li);
+    li.addEventListener("pointerenter", () => show_ctx_tip(li, key, label));
+    li.addEventListener("pointerleave", hide_ctx_tip);
     const val = li.querySelector<HTMLElement>(".val");
     if (val !== null) {
       ctx_vals.set(key, val);
@@ -1282,7 +1303,6 @@ function draw_context(m: Extract<View.Server, { $: "context" }>): void {
     const seg = ctx_segs.get(key);
     if (seg !== undefined) {
       seg.style.width = Math.max(0, Math.min(100, (to[key] / window) * 100)) + "%";
-      seg.title = ctx_title(m, key, label);
     }
   }
   ctx_card?.classList.remove("idle");
@@ -1315,6 +1335,7 @@ function reset_ctx(): void {
   }
   ctx_card?.classList.add("idle");
   ctx_card?.classList.remove("pulse");
+  hide_ctx_tip();
   reorder_ctx(CTX_PARTS.map(([key]) => key));
 }
 

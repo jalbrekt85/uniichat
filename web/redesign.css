@@ -3234,4 +3234,4 @@ footer {
 .msg.tool[data-tool="shell"] .hljs-string,
 .msg.tool[data-tool="shell"] .hljs-attr,
 .msg.tool[data-tool="shell"] .hljs-addition,
-.msg.tool[data-tool="shell"] .hljs-template-tag { color: #e9c58c; }
+.msg.tool[data-tool="shell"] .hljs-template-tag { color: var(--mid); }

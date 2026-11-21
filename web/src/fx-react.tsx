@@ -944,23 +944,12 @@ function SkullIsland(): React.ReactElement | null {
     return () => removeEventListener("keydown", key);
   }, []);
 
-  const resetView = (): void => {
-    setSelectedId(null);
-    scene.current?.reset();
-  };
-
   if (lite || !webgl) return null;
   return (
     <div className="skull-ui">
       <div ref={host} className="skull-canvas" />
       <div className="skull-head">
         <div className="skull-head-left">
-          <span className="skull-title">
-            memory tree
-            <button type="button" className="skull-reset" onClick={resetView} aria-label="Reset skull view" title="Reset view">
-              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.2 6.2A5.5 5.5 0 1 0 13.4 9M13.2 2.6v3.6H9.6" /></svg>
-            </button>
-          </span>
           {selected !== null && <b className="skull-context">{selected.label}</b>}
         </div>
         <small>drag to rotate · click a branch to expand · click a message to read</small>

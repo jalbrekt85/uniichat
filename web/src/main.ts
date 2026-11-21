@@ -1155,7 +1155,7 @@ function thought_tip(): Instance | null {
     placement: "bottom",
     arrow: true,
     interactive: true,
-    offset: [0, 8],
+    offset: [0, 12],
     maxWidth: 430,
     theme: "thought",
     animation: "fade",

@@ -562,9 +562,7 @@ function palette_chats(): PaletteItem[] {
         search: (title + " " + chat.work).toLowerCase(),
         run: () => {
           playSound("open");
-          leaving(() => {
-            location.href = chat.id === "default" ? "/" : "/?session=" + encodeURIComponent(chat.id);
-          });
+          leaving(() => switch_session(chat.id));
         },
       };
     });
@@ -949,9 +947,7 @@ function click(ev: MouseEvent): void {
     if (el.closest("#archived") !== null) {
       $("#archived").hidePopover();
     }
-    leaving(() => {
-      location.href = chat === "default" ? "/" : "/?session=" + encodeURIComponent(chat);
-    });
+    leaving(() => switch_session(chat));
     return;
   }
   if (path !== undefined || (a !== undefined && menu)) {
@@ -1069,8 +1065,10 @@ function heard(out: View.Answer): void {
 // View's link; a socket lost opens again, but one that never showed the
 // chat may be a session gone: then the page starts over.
 
+let link_close: (() => void) | null = null;
+
 function connect(): void {
-  View.link_open(v, {
+  link_close = View.link_open(v, {
     open : (query) => new WebSocket(location.origin.replace(/^http/, "ws") + "/ws" + query),
     post : (path, body) => fetch(path, { method: "POST", body }),
     hear : hear,
@@ -1087,6 +1085,36 @@ async function lost(up: boolean): Promise<boolean> {
   }
   return true;
 }
+
+// another chat, in this same tab: the view starts fresh and the socket
+// reopens on its session, so the meter shows that chat's last context
+// without a page load
+function switch_session(id: string, push = true): void {
+  const want = id === "default" ? "" : id;
+  if (want === v.session) {
+    return;
+  }
+  link_close?.();
+  link_close = null;
+  View.view_reset(v, want);
+  P.session = want;
+  save_sessions();
+  const panel = document.getElementById("ctx");
+  if (panel !== null) {
+    panel.hidden = true;
+  }
+  if (push) {
+    history.pushState(null, "", want === "" ? "/" : "/?session=" + encodeURIComponent(want));
+  }
+  draw(true);
+  connect();
+}
+
+addEventListener("popstate", () => {
+  const q = new URLSearchParams(location.search);
+  const want = q.get("session") === "default" ? "" : (q.get("session") ?? "");
+  switch_session(want === "" ? "default" : want, false);
+});
 
 // a pick changed shows what it is now (a click on a knob moves it). The
 // rows change with what they show: a state (credits, ~10/s importing)

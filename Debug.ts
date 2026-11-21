@@ -67,6 +67,48 @@ export function last(tag: string): Event | null {
   return null;
 }
 
+// the last context a session recorded, read backwards from the tail: a
+// view that joins (or a chat reopened after a restart) gets its meter
+export function lastContext(session: string): Event | null {
+  let fd: number | null = null;
+  try {
+    fd = fs.openSync(FILE, "r");
+    const size = fs.fstatSync(fd).size;
+    const chunk = 64 * 1024;
+    let pos = size;
+    let tail = "";
+    while (pos > 0) {
+      const n = Math.min(chunk, pos);
+      pos -= n;
+      const buf = Buffer.alloc(n);
+      fs.readSync(fd, buf, 0, n, pos);
+      const lines = (buf.toString("utf8") + tail).split("\n");
+      tail = lines.shift() ?? "";
+      for (let i = lines.length - 1; i >= 0; i--) {
+        const line = lines[i];
+        if (!line.includes('"kind":"context"')) {
+          continue;
+        }
+        try {
+          const event = JSON.parse(line) as Event;
+          if (event.session === session) {
+            return event;
+          }
+        } catch {}
+      }
+    }
+  } catch {
+    return null;
+  } finally {
+    if (fd !== null) {
+      try {
+        fs.closeSync(fd);
+      } catch {}
+    }
+  }
+  return null;
+}
+
 export function counters(): Record<string, number> {
   const out: Record<string, number> = {};
   for (const event of ring) {

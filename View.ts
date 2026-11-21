@@ -315,6 +315,13 @@ export function view_new(): View {
   };
 }
 
+// a view of another session, kept in the same tab: a fresh state, its
+// tab id kept (the socket's, the device's) and the session set
+export function view_reset(v: View, session: string): void {
+  const tab = v.tab;
+  Object.assign(v, view_new(), { tab, session });
+}
+
 export function view_hear(v: View, msg: Server): Client[] {
   switch (msg.$) {
     case "know": {

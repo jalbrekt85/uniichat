@@ -151,7 +151,11 @@ export type Chat = {
   writes: Promise<unknown>;
   held  : Array<() => void> | null;
   wallet: Wallet;
+  // the last prompt breakdown sent: a joining view gets it at once
+  context: Context | null;
 };
+
+type Context = { $: "context" } & ContextParts & { window: number | null; trigger: number | null };
 
 // a chat as it moves to another process (Chat.move): its user (an id:
 // a chat moved is never new, so no hello needs their name, and they may
@@ -356,7 +360,7 @@ export namespace Chat {
     const chat: Chat = {
       acct, mem, session: sid, key, work: folder, titled: false, tools, pick, socks: new Set(), acts: new Map(), busy: false, resume: false, continues: 0, generating: false, posts: 1, call: null, model: "", check: null, asked: false, open: 0, sent: [], wait: [],
       halt: new AbortController(), dog: Watchdog.dog(), live: [], calls: {}, toolAt: new Map(), echoAt: new Map(), eye: { parts: [], from: 0 }, after: Promise.resolve(), batch: null, ending: null,
-      writes: Promise.resolve(), held: null, wallet,
+      writes: Promise.resolve(), held: null, wallet, context: null,
     };
     mem.pay = tools.pay = wallet.pay;
     // the local fork (config.USER) opens blank: no hello, nothing to sign
@@ -367,6 +371,8 @@ export namespace Chat {
       Memory.push(mem, [{ kind: "unii", text: hello, line: HELLO_LINE }, { kind: "user", text: user.name }, { kind: "unii", text: SIGNED }]);
     }
     chat.eye = Chat.eye(mem, Memory.turn(mem));
+    const last = Debug.lastContext(sid);
+    chat.context = last === null ? null : (last as unknown as Context);
     Chat.adopt(chat);
     mem.made = (l, i) => Chat.made(chat, l, i);
     mem.wait.add(() => Chat.progress(chat));
@@ -461,6 +467,7 @@ export namespace Chat {
   export function context(chat: Chat, parts: ContextParts): void {
     const window = Chat.window(chat);
     const msg = { $: "context", ...parts, window, trigger: window !== null && window > 0 ? Math.round(window * 0.8) : null };
+    chat.context = msg;
     Chat.all(chat, msg);
     Debug.record("context", "main", { ...msg, session: chat.session });
   }
@@ -1563,6 +1570,9 @@ export namespace Chat {
     Chat.send(sock, Chat.state(chat));
     Chat.show(chat, sock);
     Chat.send(sock, { $: "live", live: chat.live });
+    if (chat.context !== null) {
+      Chat.send(sock, chat.context);
+    }
     if (host === null) {
       return;
     }

@@ -59,7 +59,7 @@ The avatar button is 30×30 (the avatar itself stays `size={30}`), with a 4 px p
 - The avatar MUST render the session's selected bot: `<BotAvatar type={profile} state={busy ? "working" : "default"} size={30} shading="fabric" />`.
 - `busy` keeps its current meaning (main agent generating); state switching is otherwise unchanged.
 - Changing session MUST re-render the avatar to that session's profile before any other state change is visible.
-- A session with no stored profile MUST show no avatar: a subtle dim yellow square highlight pulses slowly inside the profile square.
+- A session with no stored profile MUST show no avatar: a subtle dim yellow **hollow** square (outline only, no fill) pulses slowly inside the profile square.
 
 ### 3.4 Header affordance
 

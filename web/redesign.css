@@ -3228,3 +3228,10 @@ footer {
 
 /* a shell call's command is code too: colour it, keep the head's flow */
 .call code.cmd { padding: 0; border: 0; background: none; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* the shell card is green: green strings (hljs's --add) vanish into it.
+   Its command and output use a warm sand for quoted text instead. */
+.msg.tool[data-tool="shell"] .hljs-string,
+.msg.tool[data-tool="shell"] .hljs-attr,
+.msg.tool[data-tool="shell"] .hljs-addition,
+.msg.tool[data-tool="shell"] .hljs-template-tag { color: #e9c58c; }

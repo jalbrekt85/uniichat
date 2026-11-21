@@ -88,8 +88,6 @@ export type Pay = (kind: Served, what: string, bytes?: number) => Bill;
 export type EvictHooks = {
   window?: () => number | null;
   summary?: (ids: string[]) => string | null;
-  // focus a pair's summaries, then wait, bounded, until they are built
-  settle?: (ids: string[], ms: number) => Promise<boolean>;
   generating?: (on: boolean) => void;
 };
 

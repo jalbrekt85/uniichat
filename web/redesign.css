@@ -3161,10 +3161,13 @@ footer {
 /* Prompt context meter: a compact ledger under the skull. */
 #ctx {
   position: absolute;
-  right: 24px;
-  top: 52%;
+  left: calc(100vw - var(--skull) / 2);
+  right: auto;
+  top: 50%;
   bottom: 84px;
-  width: min(380px, calc(var(--skull) - 48px));
+  width: calc(var(--skull) - 48px);
+  max-width: 430px;
+  transform: translateX(-50%);
   display: grid;
   align-items: center;
   pointer-events: none;

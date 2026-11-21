@@ -99,8 +99,9 @@ export const BOT_MAX_CHARS = 350;
 export const BOT_ASK_CHARS = 275;
 export const BOT_MAX_TOKENS = 400;
 export const BOT_LIFE_MS = 5 * 60 * 1000;
-export const BOT_X_MIN = 50;
-export const BOT_X_MAX = 150;
+// temporary test range (the design range is 50-150)
+export const BOT_X_MIN = 2;
+export const BOT_X_MAX = 4;
 
 // a chat's cycle state, kept in its view.json
 export type SavedBot = {

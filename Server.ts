@@ -688,6 +688,7 @@ export namespace Chat {
       chat.sent = [];
       chat.wait = chat.mem.failed !== null || chat.resume ? chat.wait : []; // a terminal refusal holds the queue; a resume keeps it
       chat.busy = false;
+      Bot.check(chat);
       console.log(`[turn] end why=${why ?? "ok"} wait=${chat.wait.length} calls=${chat.mem.calls.size}`);
       Debug.record("turn", "main", {
         phase: "end",
@@ -1441,6 +1442,25 @@ export namespace Chat {
   }
 
   // a machine-readable snapshot for debugging the local instance
+  // a due crossing found at the end of a turn or on join: the next user
+  // message is not required to be the only moment the cycle can fire
+  export function check(chat: Chat): void {
+    if (chat.busy) {
+      return;
+    }
+    const s = state(chat);
+    if (s.due === null || busy.has(chat.key)) {
+      return;
+    }
+    const counter = counter_of(chat);
+    if (counter < s.due) {
+      return;
+    }
+    Debug.record("bot", chat.session, { phase: "due", counter, due: s.due, from: s.from, source: "turn-end" });
+    busy.add(chat.key);
+    void advice(chat, counter).finally(() => busy.delete(chat.key));
+  }
+
   export function status(chat: Chat): object {
     const end = chat.wait.length > 0 ? Chat.from(chat) : chat.mem.count;
     const progress = Memory.progress(chat.mem);
@@ -1580,6 +1600,7 @@ export namespace Chat {
       Chat.send(sock, chat.context);
     }
     Bot.pending(chat, sock);
+    Bot.check(chat);
     if (host === null) {
       return;
     }
@@ -2075,6 +2096,25 @@ export namespace Bot {
     }
     Chat.send(sock, { $: "thought", text: s.pending.text, at: s.pending.at });
     Debug.record("bot", chat.session, { phase: "replay", thoughtAt: s.pending.at });
+  }
+
+  // a due crossing found at the end of a turn or on join: the next user
+  // message is not required to be the only moment the cycle can fire
+  export function check(chat: Chat): void {
+    if (chat.busy) {
+      return;
+    }
+    const s = state(chat);
+    if (s.due === null || busy.has(chat.key)) {
+      return;
+    }
+    const counter = counter_of(chat);
+    if (counter < s.due) {
+      return;
+    }
+    Debug.record("bot", chat.session, { phase: "due", counter, due: s.due, from: s.from, source: "turn-end" });
+    busy.add(chat.key);
+    void advice(chat, counter).finally(() => busy.delete(chat.key));
   }
 
   export function status(chat: Chat): object {

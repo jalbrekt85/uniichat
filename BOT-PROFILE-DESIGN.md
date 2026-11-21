@@ -32,7 +32,7 @@ Each chat session has its own bot avatar. The avatar lives in the top-left heade
 2. The bubble MUST NOT change the session's counter (it writes nothing to `main/` or `main.index`).
 3. The bubble MUST NOT be counted as a "message" anywhere.
 4. The advice call MUST NOT run with tools, MUST NOT create or modify files, and MUST NOT be given the compactor's summaries or the view.
-5. The profile MUST be per session; there is no global profile.
+5. The profile MUST be per session; there is no global profile. A session with no chosen avatar has no bot and no cycle.
 6. The bubble is scoped to one session and one tab set; it must never appear over a different session.
 7. The five-minute life is measured from the thought's creation time, not from when it becomes visible.
 8. All timings assume `prefers-reduced-motion: no-preference` unless Section 11.6 applies.
@@ -59,7 +59,7 @@ The avatar button is 30×30 (the avatar itself stays `size={30}`), with a 4 px p
 - The avatar MUST render the session's selected bot: `<BotAvatar type={profile} state={busy ? "working" : "default"} size={30} shading="fabric" />`.
 - `busy` keeps its current meaning (main agent generating); state switching is otherwise unchanged.
 - Changing session MUST re-render the avatar to that session's profile before any other state change is visible.
-- A session with no stored profile MUST show `clover`.
+- A session with no stored profile MUST show no avatar: a subtle dim yellow square highlight pulses slowly inside the profile square.
 
 ### 3.4 Header affordance
 
@@ -143,7 +143,7 @@ Per-session bot state (persisted in the session's `view.json`, Section 13):
 
 ```
 {
-  avatar: string,           // one of the eight
+  avatar: string | null,    // one of the eight, or null for none
   due: number | null,       // counter value at which the next thought is due
   base: number | null,      // counter value at the moment the previous thought was generated
   from: number | null,      // highest main-log message index included in the previous window
@@ -152,7 +152,7 @@ Per-session bot state (persisted in the session's `view.json`, Section 13):
 }
 ```
 
-Initial state for a session: `{ avatar: "clover", due: null, base: null, from: null, at: null, pending: null }`.
+Initial state for a session: `{ avatar: null, due: null, base: null, from: null, at: null, pending: null }`. No cycle runs until an avatar is chosen.
 
 ### 5.3 First user message
 
@@ -535,7 +535,7 @@ Per session, in the session directory: `~/.unii/users/<user>/sessions/<session>/
 ```
 
 - Missing/invalid fields fall back to the defaults in 5.2.
-- Unknown `avatar` → `clover`.
+- Unknown `avatar` → none.
 - `pending` text is capped at 350 characters on write.
 - The bubble text is never written anywhere else.
 

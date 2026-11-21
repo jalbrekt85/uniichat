@@ -1176,7 +1176,7 @@ function thought_render(text: string, at: number): void {
   if (tip === null) {
     return;
   }
-  const pal = BOT_PALETTE[(v.bot as keyof typeof BOT_PALETTE)] ?? BOT_PALETTE.clover;
+  const pal = v.bot !== null ? BOT_PALETTE[(v.bot as keyof typeof BOT_PALETTE)] ?? BOT_PALETTE.clover : BOT_PALETTE.clover;
   const box = tip.popper;
   box.style.setProperty("--pl-light", pal.light);
   box.style.setProperty("--pl-deep", pal.deep);

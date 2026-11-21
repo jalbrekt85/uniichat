@@ -3608,3 +3608,21 @@ footer {
 .tippy-box[data-theme~="thought"][data-placement^="top"] > .tippy-arrow { bottom: -9px; }
 .tippy-box[data-theme~="thought"][data-placement^="top"] > .tippy-arrow::before { border-width: 9px 9px 0; border-top-color: currentColor; top: -9px; }
 @keyframes thought-pop { from { opacity: 0; transform: translateY(6px) scale(.97); } to { opacity: 1; transform: none; } }
+
+/* A session with no bot yet: a dim yellow square breathing inside the
+   profile square. */
+.bot-empty {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: #d8b45a;
+  box-shadow: 0 0 10px rgb(216 180 90 / 30%);
+  animation: bot-empty 4.2s ease-in-out infinite;
+}
+@keyframes bot-empty {
+  0%, 100% { opacity: .12; transform: scale(.9); }
+  50% { opacity: .55; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bot-empty { animation: none; opacity: .35; }
+}

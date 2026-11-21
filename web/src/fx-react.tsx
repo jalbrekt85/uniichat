@@ -700,8 +700,8 @@ function isLite(): boolean {
 // ---------------------------------------------------------------------------
 // Shell islands
 
-type ShellState = { busy: boolean; wait: string; agents: string[]; welcome: boolean; recording: boolean; stop: boolean; text: boolean; tree: SkullTree; bot: string; setBot: (name: string) => void; session: string };
-let shell: ShellState = { busy: false, wait: "", agents: [], welcome: false, recording: false, stop: false, text: false, tree: SKULL_SEED, bot: "clover", setBot: () => {}, session: "" };
+type ShellState = { busy: boolean; wait: string; agents: string[]; welcome: boolean; recording: boolean; stop: boolean; text: boolean; tree: SkullTree; bot: string | null; setBot: (name: string) => void; session: string };
+let shell: ShellState = { busy: false, wait: "", agents: [], welcome: false, recording: false, stop: false, text: false, tree: SKULL_SEED, bot: null, setBot: () => {}, session: "" };
 const shellSubs = new Set<(s: ShellState) => void>();
 
 export function setShell(next: Partial<ShellState>): void {
@@ -737,11 +737,11 @@ function BrandIsland(): React.ReactElement | null {
     window.dispatchEvent(new CustomEvent("unii:bot-picker", { detail: open }));
   }, [open]);
   if (lite) return null;
-  const bot = (BOTS as readonly string[]).includes(s.bot) ? s.bot : "clover";
+  const bot = s.bot !== null && (BOTS as readonly string[]).includes(s.bot) ? s.bot : null;
   return (
     <>
       <button className="bot-brand" type="button" aria-label="Choose this chat's bot" aria-expanded={open} onClick={() => setOpen(!open)}>
-        <BotAvatar type={bot as never} state={s.busy ? "working" : "default"} size={30} shading="fabric" aria-label="UniiChat" />
+        {bot === null ? <span className="bot-empty" aria-hidden="true" /> : <BotAvatar type={bot as never} state={s.busy ? "working" : "default"} size={30} shading="fabric" aria-label="UniiChat" />}
       </button>
       {open && (
         <div className="bot-picker" role="dialog" aria-label="Choose this chat's bot">

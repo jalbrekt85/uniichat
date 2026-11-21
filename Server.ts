@@ -1450,7 +1450,7 @@ export namespace Chat {
       return;
     }
     const s = state(chat);
-    if (s.due === null) {
+    if (s.avatar === null || s.due === null) {
       return;
     }
     const counter = counter_of(chat);
@@ -1468,7 +1468,7 @@ export namespace Chat {
       return;
     }
     const s = state(chat);
-    if (s.due === null || busy.has(chat.key)) {
+    if (s.avatar === null || s.due === null || busy.has(chat.key)) {
       return;
     }
     const counter = counter_of(chat);
@@ -1925,8 +1925,8 @@ export namespace Bot {
     if (chat.mem.bot === null) {
       chat.mem.bot = bot_default();
     }
-    if (bot_name(chat.mem.bot.avatar) === null) {
-      chat.mem.bot.avatar = "clover";
+    if (chat.mem.bot.avatar !== null && bot_name(chat.mem.bot.avatar) === null) {
+      chat.mem.bot.avatar = null;
     }
     return chat.mem.bot;
   }
@@ -1992,6 +1992,9 @@ export namespace Bot {
 
   export function trigger(chat: Chat): void {
     const s = state(chat);
+    if (s.avatar === null) {
+      return;
+    }
     const counter = counter_of(chat);
     if (s.due === null && s.base === null) {
       const x = BOT_X_MIN + Math.floor(Math.random() * (BOT_X_MAX - BOT_X_MIN + 1));
@@ -2028,6 +2031,9 @@ export namespace Bot {
 
   async function advice(chat: Chat, counter: number): Promise<void> {
     const s = state(chat);
+    if (s.avatar === null) {
+      return;
+    }
     const win = window(chat, s.from);
     const system = bot_system(s.avatar);
     const body = trim(chat, win.lines, system);
@@ -2124,7 +2130,7 @@ export namespace Bot {
       return;
     }
     const s = state(chat);
-    if (s.due === null) {
+    if (s.avatar === null || s.due === null) {
       return;
     }
     const counter = counter_of(chat);
@@ -2142,7 +2148,7 @@ export namespace Bot {
       return;
     }
     const s = state(chat);
-    if (s.due === null || busy.has(chat.key)) {
+    if (s.avatar === null || s.due === null || busy.has(chat.key)) {
       return;
     }
     const counter = counter_of(chat);

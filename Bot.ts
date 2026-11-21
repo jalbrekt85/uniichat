@@ -104,7 +104,7 @@ export const BOT_X_MAX = 300;
 
 // a chat's cycle state, kept in its view.json
 export type SavedBot = {
-  avatar: BotName;
+  avatar: BotName | null;
   due: number | null;
   base: number | null;
   from: number | null;
@@ -113,7 +113,7 @@ export type SavedBot = {
 };
 
 export function bot_default(): SavedBot {
-  return { avatar: "clover", due: null, base: null, from: null, at: null, pending: null };
+  return { avatar: null, due: null, base: null, from: null, at: null, pending: null };
 }
 
 export function bot_name(raw: string): BotName | null {

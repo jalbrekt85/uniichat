@@ -73,7 +73,7 @@ export type State = {
   credits   : number | null;
   importing : Progress | null;
   session   : string;
-  bot       : string;   // this chat's bot avatar
+  bot       : string | null;   // this chat's bot avatar, none until chosen
   work      : string;   // this chat's working dir
   sessions  : Session[];
   works     : string[]; // every work dir the rail keeps
@@ -298,7 +298,7 @@ export function view_new(): View {
     credits   : null,
     importing : null,
     session   : "",
-    bot       : "clover",
+    bot       : null,
     work      : "",
     sessions  : [],
     works     : [],

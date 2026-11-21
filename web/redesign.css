@@ -3041,7 +3041,7 @@ body {
     margin-right: calc(-1 * var(--skull));
   }
 }
-.skull-head { top: 27%; }
+.skull-head { top: 18%; }
 
 /* The chat column is the page, not a box. Summary text boxes have no fill:
    only their very faint boundary distinguishes them. User/tool text boxes
@@ -3082,7 +3082,8 @@ header::after {
 .skull-credit {
   position: absolute;
   left: calc(100vw - var(--skull) + 24px);
-  bottom: 12px;
+  top: 84%;
+  bottom: auto;
   z-index: 2;
   color: var(--soft);
   font: 7px/1.4 var(--sans);
@@ -3161,7 +3162,9 @@ footer {
 /* Prompt context meter: a compact ledger under the skull. */
 #ctx {
   position: absolute;
-  left: calc(100vw - var(--skull) / 2);
+  /* centered in the free space between the chat box and the screen edge:
+     (chat's right edge + viewport) / 2, so it follows a resized column */
+  left: calc(((100vw - var(--skull) + var(--rail)) / 2 + min(var(--col), 100vw - var(--rail) - var(--skull) - 44px) / 2 + 100vw) / 2);
   right: auto;
   top: 50%;
   bottom: 84px;
@@ -3193,7 +3196,7 @@ footer {
 }
 #ctx[hidden] { display: none; }
 .ctx-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .14em; font-size: 9px; color: var(--mid); }
-.ctx-head b { font-weight: 500; color: var(--ink); letter-spacing: .02em; font-size: 10px; font-variant-numeric: tabular-nums; }
+.ctx-head b { font-weight: 500; color: var(--ink); letter-spacing: .02em; font-size: 10px; font-variant-numeric: tabular-nums; text-transform: none; }
 .ctx-head b.over { color: var(--red); }
 .ctx-bar { position: relative; display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: color-mix(in oklab, var(--ink) 8%, transparent); }
 .ctx-bar > i { display: block; height: 100%; transition: width .55s cubic-bezier(.22, .61, .36, 1); }

@@ -61,6 +61,7 @@ import * as Debug from "./Debug.ts";
 import { Pick } from "./Pick.ts";
 import * as names from "./Names.ts";
 import { image_kind } from "./View.ts";
+import type { SavedBot } from "./Bot.ts";
 
 // Types
 // =====
@@ -103,7 +104,7 @@ type End = [number, number];
 type Kept = { parts: Array<[number, number]>; batch: boolean };
 
 // view.json: the chat's view, the compactions' (none: the chat's)
-type Saved = Kept & { seen?: Kept; main: End; tree: End; pick: object | null; effort?: string | null; goal?: string | null; work?: string[] };
+type Saved = Kept & { seen?: Kept; main: End; tree: End; pick: object | null; effort?: string | null; goal?: string | null; work?: string[]; bot?: SavedBot | null };
 
 // fds: files read lately, open, oldest first; count: the pages logged
 // whole; open: those after, not whole yet; pick: the chat's, as last set;
@@ -129,6 +130,7 @@ export type Memory = {
   pick   : object | null;
   effort : string | null;
   goal   : string | null;
+  bot    : SavedBot | null;
   work   : string[];
   nodes  : Map<number, string>;
   agents : Map<string, number>;
@@ -238,13 +240,14 @@ export namespace Memory {
 
   export function load(dir: string, share: Memory["share"], acted: Memory["acted"] = () => {}): Memory {
     const mem: Memory = {
-      dir, fds: new Map(), count: 0, open: 0, pick: null, effort: null, goal: null, work: [], nodes: new Map(), agents: new Map(), ready: [[], []], ends: { main: [0, 0], tree: [0, 0] },
+      dir, fds: new Map(), count: 0, open: 0, pick: null, effort: null, goal: null, bot: null, work: [], nodes: new Map(), agents: new Map(), ready: [[], []], ends: { main: [0, 0], tree: [0, 0] },
       view: { parts: [], size: 0, batch: false, high: HIGH }, seen: { parts: [], size: 0, batch: false, high: SEEN },
       busy: new Map(), sides: new Map(), calls: new Map(), hold: [null, "paused"], failed: null, done: false, agent: false, started: 0, tally: null, wait: new Set(), focus: new Set(), share, acted,
     };
     const saved = Memory.saved(dir);
     mem.effort = saved?.effort ?? null;
     mem.goal = saved?.goal ?? null;
+    mem.bot = saved?.bot ?? null;
     mem.work = saved?.work ?? [];
     mem.ends.main = Memory.index(mem, "main", saved?.main ?? [0, 0]);
     mem.ends.tree = Memory.index(mem, "tree", saved?.tree ?? [0, 0]);
@@ -283,7 +286,7 @@ export namespace Memory {
   export function save(mem: Memory): void {
     const file = mem.dir + "/view.json";
     const [chat, seen] = [mem.view, mem.seen].map((view): Kept => ({ parts: view.parts.map((part) => [part.l, part.i]), batch: view.batch }));
-    fs.writeFileSync(file + ".new", JSON.stringify({ ...chat, seen, effort: mem.effort, goal: mem.goal, work: mem.work, ...mem.ends }));
+    fs.writeFileSync(file + ".new", JSON.stringify({ ...chat, seen, effort: mem.effort, goal: mem.goal, work: mem.work, bot: mem.bot, ...mem.ends }));
     fs.renameSync(file + ".new", file);
     Disk.wrote(file);
   }

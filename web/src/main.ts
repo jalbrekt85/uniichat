@@ -16,6 +16,7 @@
 import * as Import from "../../Import.ts";
 import { theme_css } from "../../Theme.ts";
 import * as View from "../../View.ts";
+import { BOT_LIFE_MS, BOT_PALETTE } from "../../Bot.ts";
 import * as Html from "./Html.ts";
 import { mountShell, setPendingPics, setShell } from "./fx-react";
 import { initPolish, playSound, setSound, soundEnabled } from "./polish";
@@ -194,6 +195,7 @@ async function boot(): Promise<void> {
   initPolish();
   initPalette();
   reset_ctx();
+  init_thought();
   connect();
   if (q.has("paid")) {
     toast("Payment received. Your credit shows up in a moment.");
@@ -1089,6 +1091,7 @@ function switch_session(id: string, push = true): void {
   if (want === v.session) {
     return;
   }
+  thought_hide(false);
   link_close?.();
   link_close = null;
   View.view_reset(v, want);
@@ -1111,6 +1114,74 @@ addEventListener("popstate", () => {
 // a pick changed shows what it is now (a click on a knob moves it). The
 // rows change with what they show: a state (credits, ~10/s importing)
 // only by its agents, an agent's page saying whether it runs
+// the bot's thought bubble: a plush cloud above its avatar, five minutes
+let thought_timer = 0;
+
+function thought_hide(send: boolean): void {
+  const el = document.getElementById("thought");
+  if (send) {
+    View.link_send(v, { $: "thought-close" } as never);
+  }
+  clearTimeout(thought_timer);
+  thought_timer = 0;
+  if (el === null || el.hidden) {
+    return;
+  }
+  el.classList.remove("in");
+  el.classList.add("out");
+  window.setTimeout(() => {
+    el.hidden = true;
+    el.classList.remove("out");
+  }, 380);
+}
+
+function thought_place(): void {
+  const el = document.getElementById("thought");
+  const avatar = document.querySelector<HTMLElement>("#fx-brand .bot-brand");
+  if (el === null || avatar === null || el.hidden) {
+    return;
+  }
+  const a = avatar.getBoundingClientRect();
+  const w = el.offsetWidth;
+  const h = el.offsetHeight;
+  el.style.left = Math.max(12, Math.min(a.left - 8, innerWidth - w - 12)) + "px";
+  let top = a.top - h - 14;
+  const above = top >= 12;
+  if (!above) {
+    top = a.bottom + 14;
+  }
+  el.style.top = top + "px";
+  el.classList.toggle("below", !above);
+}
+
+function thought_show(text: string, at: number): void {
+  const el = document.getElementById("thought");
+  const body = document.getElementById("thought-text");
+  if (el === null || body === null) {
+    return;
+  }
+  const pal = BOT_PALETTE[(v.bot as keyof typeof BOT_PALETTE)] ?? BOT_PALETTE.clover;
+  el.style.setProperty("--pl-light", pal.light);
+  el.style.setProperty("--pl-deep", pal.deep);
+  el.style.setProperty("--pl-ink", pal.ink);
+  el.style.setProperty("--pl-accent", pal.accent);
+  body.textContent = text;
+  el.hidden = false;
+  el.classList.remove("out");
+  el.classList.remove("in");
+  void el.offsetWidth;
+  el.classList.add("in");
+  thought_place();
+  clearTimeout(thought_timer);
+  const left = Math.max(0, at + BOT_LIFE_MS - Date.now());
+  thought_timer = window.setTimeout(() => thought_hide(true), left);
+}
+
+function init_thought(): void {
+  document.getElementById("thought-close")?.addEventListener("click", () => thought_hide(true));
+  addEventListener("resize", thought_place);
+}
+
 // the prompt's body, by part, as a stacked meter under the skull
 const CTX_PARTS: Array<[string, string, string]> = [
   ["tree", "tree", "var(--accent)"],
@@ -1336,6 +1407,14 @@ function reset_ctx(): void {
 function hear(msg: View.Server): void {
   if (msg.$ === "context") {
     draw_context(msg);
+    return;
+  }
+  if (msg.$ === "thought") {
+    thought_show(msg.text, msg.at);
+    return;
+  }
+  if (msg.$ === "thought-close") {
+    thought_hide(false);
     return;
   }
   const was = View.view_pick(v);
@@ -2020,7 +2099,7 @@ function bars(): void {
   const activity = document.getElementById("fx-activity");
   if (activity !== null) activity.hidden = output;
   document.body.classList.toggle("has-output", output);
-  setShell({ busy: v.busy, wait: v.wait, agents: v.agents, recording: P.rec !== null, welcome: empty, stop, text: output, tree: tree_for_view() });
+  setShell({ busy: v.busy, wait: v.wait, agents: v.agents, recording: P.rec !== null, welcome: empty, stop, text: output, tree: tree_for_view(), bot: v.bot, setBot: (name: string) => View.link_send(v, { $: "bot-avatar", name } as never) });
   jump_update();
   refreshPalette();
 }

@@ -14,6 +14,7 @@ import { VoiceRing } from "voice-ring";
 import { DistortionWave } from "distortion-waves";
 import { playSound } from "./polish";
 import { SKULL_SEED, mountNeural, type NeuralHandle, type SkullNode, type SkullTree } from "./neural";
+import { BOTS, BOT_NAMES } from "../../Bot.ts";
 
 // ---------------------------------------------------------------------------
 // The complete Library.dev sidebar, enumerated
@@ -699,14 +700,14 @@ function isLite(): boolean {
 // ---------------------------------------------------------------------------
 // Shell islands
 
-type ShellState = { busy: boolean; wait: string; agents: string[]; welcome: boolean; recording: boolean; stop: boolean; text: boolean; tree: SkullTree };
-let shell: ShellState = { busy: false, wait: "", agents: [], welcome: false, recording: false, stop: false, text: false, tree: SKULL_SEED };
+type ShellState = { busy: boolean; wait: string; agents: string[]; welcome: boolean; recording: boolean; stop: boolean; text: boolean; tree: SkullTree; bot: string; setBot: (name: string) => void };
+let shell: ShellState = { busy: false, wait: "", agents: [], welcome: false, recording: false, stop: false, text: false, tree: SKULL_SEED, bot: "clover", setBot: () => {} };
 const shellSubs = new Set<(s: ShellState) => void>();
 
 export function setShell(next: Partial<ShellState>): void {
   const prev = shell;
   shell = { ...shell, ...next };
-  if (prev.busy !== shell.busy || prev.wait !== shell.wait || prev.agents.join() !== shell.agents.join() || prev.welcome !== shell.welcome || prev.recording !== shell.recording || prev.stop !== shell.stop || prev.text !== shell.text || prev.tree !== shell.tree) {
+  if (prev.busy !== shell.busy || prev.wait !== shell.wait || prev.agents.join() !== shell.agents.join() || prev.welcome !== shell.welcome || prev.recording !== shell.recording || prev.stop !== shell.stop || prev.text !== shell.text || prev.tree !== shell.tree || prev.bot !== shell.bot) {
     shellSubs.forEach((fn) => fn(shell));
   }
 }
@@ -730,8 +731,30 @@ function useGallery(): boolean {
 function BrandIsland(): React.ReactElement | null {
   const lite = useMemo(() => isLite(), []);
   const s = useShell();
+  const [open, setOpen] = useState(false);
   if (lite) return null;
-  return <BotAvatar type="clover" state={s.busy ? "working" : "default"} size={30} shading="fabric" aria-label="UniiChat" />;
+  const bot = (BOTS as readonly string[]).includes(s.bot) ? s.bot : "clover";
+  return (
+    <>
+      <button className="bot-brand" type="button" aria-label="Choose this chat's bot" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <BotAvatar type={bot as never} state={s.busy ? "working" : "default"} size={30} shading="fabric" aria-label="UniiChat" />
+      </button>
+      {open && (
+        <div className="bot-picker" role="dialog" aria-label="Choose this chat's bot">
+          <div className="bot-picker-head">your bot</div>
+          <div className="bot-picker-grid">
+            {BOTS.map((name) => (
+              <button key={name} type="button" className={"bot-pick" + (name === bot ? " on" : "")} onClick={() => { s.setBot(name); setOpen(false); }} aria-label={BOT_NAMES[name]}>
+                <BotAvatar type={name as never} state="default" size={40} shading="fabric" />
+                <span>{BOT_NAMES[name]}</span>
+              </button>
+            ))}
+          </div>
+          <div className="bot-picker-hint">each chat picks its own</div>
+        </div>
+      )}
+    </>
+  );
 }
 
 function ActivityIsland(): React.ReactElement | null {

@@ -3235,3 +3235,144 @@ footer {
 .msg.tool[data-tool="shell"] .hljs-attr,
 .msg.tool[data-tool="shell"] .hljs-addition,
 .msg.tool[data-tool="shell"] .hljs-template-tag { color: var(--mid); }
+
+/* The bot avatar, its picker and the thought bubble. The picker is the
+   site's chrome; the bubble is the bots' own plush art. */
+.brand-bot { position: relative; }
+.bot-brand {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 2px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease;
+}
+.bot-brand:hover { transform: scale(1.06); background: color-mix(in oklab, var(--accent) 10%, transparent); }
+.bot-brand:active { transform: scale(.96); }
+.bot-brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bot-picker {
+  position: absolute;
+  top: 42px;
+  left: -8px;
+  z-index: 90;
+  width: 316px;
+  padding: 14px 14px 12px;
+  border: 1px solid color-mix(in oklab, var(--hair) 84%, transparent);
+  border-radius: 16px;
+  background: color-mix(in oklab, var(--lift) 96%, transparent);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.bot-picker-head { margin-bottom: 10px; color: var(--mid); font: 9px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; }
+.bot-picker-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.bot-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 4px 7px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--soft);
+  cursor: pointer;
+  transition: background .16s ease, border-color .16s ease, transform .16s ease;
+}
+.bot-pick:hover { background: var(--hover); transform: translateY(-1px); }
+.bot-pick.on { border-color: color-mix(in oklab, var(--accent) 40%, var(--hair)); background: color-mix(in oklab, var(--accent) 7%, transparent); color: var(--ink); }
+.bot-pick span { font: 8px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+.bot-picker-hint { margin-top: 9px; color: var(--soft); font: 9px/1.4 var(--mono); text-align: center; }
+
+/* A thought: a plush cloud with a trailing dot, in the bot's palette. */
+.thought {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 300px;
+  pointer-events: none;
+}
+.thought.below { flex-direction: column-reverse; }
+.thought[hidden] { display: none; }
+.thought-cloud {
+  position: relative;
+  isolation: isolate;
+  max-width: 300px;
+  padding: 16px 34px 14px 19px;
+  border-radius: 27px;
+  background: radial-gradient(120% 130% at 28% 22%, var(--pl-light) 0%, var(--pl-deep) 92%);
+  color: var(--pl-ink);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 30%), inset 0 1px 0 rgb(255 255 255 / 38%), inset 0 -2px 6px rgb(0 0 0 / 12%);
+  pointer-events: auto;
+  font: 500 13px/1.5 ui-rounded, "SF Pro Rounded", var(--sans);
+  letter-spacing: -.01em;
+}
+.thought-cloud::before,
+.thought-cloud::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--pl-deep);
+}
+.thought-cloud::before { top: -14px; left: 26px; width: 58px; height: 46px; }
+.thought-cloud::after { top: -8px; right: 30px; width: 40px; height: 34px; }
+#thought-text { position: relative; z-index: 1; margin: 0; }
+.thought-tail { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 3px 0 0 26px; }
+.thought.below .thought-tail { padding: 0 0 3px 26px; flex-direction: column-reverse; }
+.thought-tail i {
+  display: block;
+  border-radius: 50%;
+  background: var(--pl-deep);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 30%);
+}
+.thought-tail i:nth-child(1) { width: 10px; height: 10px; }
+.thought-tail i:nth-child(2) { width: 6.5px; height: 6.5px; }
+.thought-tail i:nth-child(3) { width: 4px; height: 4px; }
+.thought-close {
+  position: absolute;
+  z-index: 2;
+  top: 5px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--pl-ink) 16%, transparent);
+  color: color-mix(in oklab, var(--pl-ink) 78%, transparent);
+  font: 700 12px/1 var(--sans);
+  cursor: pointer;
+  transition: transform .14s ease, background .14s ease;
+}
+.thought-close:hover { transform: scale(1.08); background: color-mix(in oklab, var(--pl-ink) 26%, transparent); color: var(--pl-ink); }
+.thought-close:active { transform: scale(.92); }
+
+.thought.in { animation: thought-in 560ms cubic-bezier(.34, 1.56, .64, 1) both; }
+.thought.in .thought-cloud { animation: thought-breathe 5.2s ease-in-out 600ms infinite; }
+.thought.in .thought-tail i { animation: thought-dot-in 240ms cubic-bezier(.34, 1.56, .64, 1) both; }
+.thought.in .thought-tail i:nth-child(2) { animation-delay: 40ms; }
+.thought.in .thought-tail i:nth-child(3) { animation-delay: 80ms; }
+.thought.out { animation: thought-out 380ms cubic-bezier(.4, 0, .2, 1) both; }
+.thought.out .thought-tail i { animation: thought-dot-out 160ms ease both; }
+.thought.out .thought-tail i:nth-child(2) { animation-delay: 30ms; }
+.thought.out .thought-tail i:nth-child(3) { animation-delay: 60ms; }
+@keyframes thought-in { 0% { opacity: 0; transform: scale(.62) translateY(10px); } 55% { opacity: 1; } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes thought-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.012); } }
+@keyframes thought-dot-in { 0% { opacity: 0; transform: scale(0); } 70% { opacity: 1; transform: scale(1.15); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes thought-dot-out { to { opacity: 0; transform: scale(0); } }
+@keyframes thought-out { 0% { opacity: 1; transform: scale(1) translateY(0); } 100% { opacity: 0; transform: scale(.94) translateY(4px); } }
+@media (prefers-reduced-motion: reduce) {
+  .thought.in, .thought.out { animation-duration: 150ms; }
+  .thought.in .thought-cloud, .thought.in .thought-tail i, .thought.out .thought-tail i { animation: none; }
+  .thought.in, .thought.out { animation-name: thought-fade; }
+  @keyframes thought-fade { from { opacity: 0; } to { opacity: 1; } }
+}

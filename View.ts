@@ -73,6 +73,7 @@ export type State = {
   credits   : number | null;
   importing : Progress | null;
   session   : string;
+  bot       : string;   // this chat's bot avatar
   work      : string;   // this chat's working dir
   sessions  : Session[];
   works     : string[]; // every work dir the rail keeps
@@ -113,6 +114,8 @@ export type Server =
   | ({ $: "entry"; agent?: string; id?: number } & Entry)
   | { $: "delta"; agent?: string; kind: Kind; text: string; fresh?: boolean }
   | { $: "live"; agent?: string; live: Live[] }
+  | { $: "thought"; text: string; at: number }
+  | { $: "thought-close" }
   | ({ $: "context" } & ContextParts & { window: number | null; trigger: number | null })
   | ({ $: "state" } & State)
   | { $: "agent"; name: string; found: boolean }
@@ -133,6 +136,8 @@ export type Body   = () => any;
 // the acts a view sends (out: a job's output): changes, then reads; a
 // message's body is its images (sizes given), then its text
 export type Client =
+  | { $: "bot-avatar"; name: string }
+  | { $: "thought-close" }
   | { $: "say"; sizes: number[]; body: Body }
   | { $: "import"; body: Body }
   | { $: "voice"; type: string; body: Body }
@@ -293,6 +298,7 @@ export function view_new(): View {
     credits   : null,
     importing : null,
     session   : "",
+    bot       : "clover",
     work      : "",
     sessions  : [],
     works     : [],

@@ -15,8 +15,8 @@
 <title>UniiChat</title>
 <link rel="icon" href="/favicon.svg">
 <link rel="stylesheet" href="/style.css?v=20261119l">
-<link rel="stylesheet" href="/redesign.css?v=20261121z">
-<script type="module" src="/app.js?v=20261121af"></script>
+<link rel="stylesheet" href="/redesign.css?v=20261122d">
+<script type="module" src="/app.js?v=20261121ai"></script>
 </head>
 <!-- the page, as a guest sees it until signed in (web/src/main.ts) -->
 <body class="guest">
@@ -40,13 +40,21 @@
 <div id="chats-veil"></div>
 <header>
   <button class="chats-toggle" type="button" aria-label="Chats" aria-controls="chats" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h11"/></svg></button>
-  <button class="brand" data-go="/" data-act='{"$":"Goto","name":null}'><span id="fx-brand" class="brand-bot" aria-hidden="true"></span><span>UniiChat</span></button>
+  <span id="fx-brand" class="brand-bot"></span>
+  <button class="brand" data-go="/" data-act='{"$":"Goto","name":null}'><span>UniiChat</span></button>
   <button class="sound" type="button" data-sound="icon" aria-label="Mute sound effects" title="Sound effects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h3.2L11 6v12l-3.8-3H4z"/><path class="wave" d="M14.5 9a4 4 0 0 1 0 6"/><path class="wave" d="M17 6.5a8 8 0 0 1 0 11"/></svg></button>
   <span class="net">offline</span>
   <button class="imping" popovertarget="import" hidden><span></span><progress max="1" value="0"></progress></button>
   <button class="credits" data-go="/account"></button>
   <button class="menu" popovertarget="menu" aria-label="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"/></svg></button>
 </header>
+<div id="thought" class="thought" hidden role="status" aria-live="polite" aria-atomic="true">
+  <div class="thought-cloud">
+    <button id="thought-close" class="thought-close" type="button" aria-label="Dismiss thought" title="Dismiss thought">×</button>
+    <p id="thought-text"></p>
+  </div>
+  <div class="thought-tail" aria-hidden="true"><i></i><i></i><i></i></div>
+</div>
 <main id="log">
   <section id="welcome" hidden>
     <div id="fx-welcome" class="fx-welcome-art" aria-hidden="true"></div>

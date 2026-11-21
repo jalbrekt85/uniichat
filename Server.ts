@@ -54,6 +54,7 @@ import { Price } from "./Price.ts";
 import { Sessions } from "./Sessions.ts";
 import { MASTER, SEARCHES, Tools, type Agent, type Live, type Moved as Kit } from "./Tools.ts";
 import { BUILD, email_ask, FRAME, IMAGES, live_push, MOVE, PING, QUIT, SUMMARIES, TICK, TURN, WIRE, type Answer, type Part, type Server as Out, type Wait } from "./View.ts";
+import { BOT_LIFE_MS, BOT_MAX_CHARS, BOT_MAX_TOKENS, BOT_X_MAX, BOT_X_MIN, bot_default, bot_name, bot_system, type SavedBot } from "./Bot.ts";
 import { Watchdog, type Dog } from "./Watchdog.ts";
 import * as config from "./Config.ts";
 import hello_md from "./hello.md" with { type: "text" };
@@ -533,7 +534,11 @@ export namespace Chat {
       images.push(name);
       at += size;
     }
-    await Chat.writing(chat, async () => Chat.take(chat, await Chat.text(chat, body, at, images, id)));
+    await Chat.writing(chat, async () => {
+      const msg = await Chat.text(chat, body, at, images, id);
+      Bot.trigger(chat);
+      return Chat.take(chat, msg);
+    });
     return {};
   }
 
@@ -1491,6 +1496,7 @@ export namespace Chat {
       },
       lastMain: Debug.last("main"),
       lastCompactor: Debug.last("compactor"),
+      bot: Bot.status(chat),
       memory: {
         count: chat.mem.count,
         first: Memory.first(chat.mem),
@@ -1517,7 +1523,7 @@ export namespace Chat {
     const why = chat.mem.hold[1];
     const importing = batch && { done: batch.all - Chat.time(batch), total: batch.all, spent: batch.spent, left: batch.left / 1e6, why, msgs: batch.b - batch.a, open: batch.open };
     const billing = Chat.cloud.billing;
-    return { $: "state", busy: chat.busy, wait: Chat.waits(chat), agents, pick: chat.pick, ...config.OFFER, bills: billing.bills, credits: billing.credits(chat.acct.user), importing, session: chat.session, work: chat.work, sessions: Sessions.list(chat.acct.user), works: Sessions.works(chat.acct.user) };
+    return { $: "state", busy: chat.busy, wait: Chat.waits(chat), agents, pick: chat.pick, bot: Bot.state(chat).avatar, ...config.OFFER, bills: billing.bills, credits: billing.credits(chat.acct.user), importing, session: chat.session, work: chat.work, sessions: Sessions.list(chat.acct.user), works: Sessions.works(chat.acct.user) };
   }
 
   export function waits(chat: Chat): Wait {
@@ -1573,6 +1579,7 @@ export namespace Chat {
     if (chat.context !== null) {
       Chat.send(sock, chat.context);
     }
+    Bot.pending(chat, sock);
     if (host === null) {
       return;
     }
@@ -1732,6 +1739,12 @@ export namespace Chat {
         Chat.change(chat);
         return {};
       }
+      case "bot-avatar": {
+        return Bot.avatar(chat, String(msg.name));
+      }
+      case "thought-close": {
+        return Bot.close(chat);
+      }
       case "out": {
         Tools.done(chat.tools, device, String(msg.job), msg.out);
         return {};
@@ -1856,6 +1869,216 @@ export namespace Chat {
 
 // Main
 // ====
+
+
+// Bot
+// ===
+// A chat's bot: its avatar, the cycle that decides when it thinks, the
+// raw window it reads, and the one low-thinking call that writes the
+// thought. The thought is user-facing only: it is never logged to the
+// chat, never counted, and never reaches the main agent.
+
+export namespace Bot {
+  const busy = new Set<string>();
+
+  export function state(chat: Chat): SavedBot {
+    if (chat.mem.bot === null) {
+      chat.mem.bot = bot_default();
+    }
+    return chat.mem.bot;
+  }
+
+  function save(chat: Chat): void {
+    Memory.save(chat.mem);
+  }
+
+  // the index of the first user message, less one: the first window starts there
+  function first(chat: Chat): number {
+    for (let i = 0; i < chat.mem.count; i++) {
+      if (Memory.message(chat.mem, i)?.kind === "user") {
+        return i - 1;
+      }
+    }
+    return -1;
+  }
+
+  // the raw transcript since `from` (null: since the first user message)
+  function window(chat: Chat, from: number | null): { lines: string[]; from: number } {
+    const start = from === null ? first(chat) : from;
+    const lines: string[] = [];
+    let last = start;
+    for (let i = Math.max(0, start + 1); i < chat.mem.count; i++) {
+      const m = Memory.message(chat.mem, i);
+      if (m === null) {
+        continue;
+      }
+      const role = m.kind === "user" ? "user" : m.kind === "unii" ? "assistant" : m.kind === "tool" ? "tool call" : m.kind === "echo" ? "tool result" : m.kind;
+      lines.push(i + " " + role + ": " + m.text);
+      last = Math.max(last, i);
+    }
+    return { lines, from: last };
+  }
+
+  // drop whole oldest lines until the call fits; clip only if the newest
+  // line alone cannot (never drop the newest user message)
+  function trim(chat: Chat, lines: string[], system: string): { text: string; dropped: number } {
+    const win = Local.window(Pick.ask(chat.pick).model) ?? 81920;
+    const budget = Math.max(1024, win - BOT_MAX_TOKENS - Math.ceil(Buffer.byteLength(system) / 4) - 256);
+    let bytes = lines.reduce((n, l) => n + Buffer.byteLength(l) + 2, 0);
+    let start = 0;
+    while (start < lines.length - 1 && bytes / 4 > budget) {
+      bytes -= Buffer.byteLength(lines[start]) + 2;
+      start += 1;
+    }
+    let text = lines.slice(start).join("\n\n");
+    if (Buffer.byteLength(text) / 4 > budget) {
+      const cut = Math.max(256, budget * 4 - 64);
+      text = "…[clipped] " + text.slice(-cut);
+    }
+    return { text, dropped: start };
+  }
+
+  export function trigger(chat: Chat): void {
+    const s = state(chat);
+    const counter = chat.mem.count;
+    if (s.due === null && s.base === null) {
+      const x = BOT_X_MIN + Math.floor(Math.random() * (BOT_X_MAX - BOT_X_MIN + 1));
+      s.base = counter;
+      s.due = counter + x;
+      s.from = first(chat);
+      save(chat);
+      Debug.record("bot", chat.session, { phase: "init", counter, x, due: s.due, from: s.from, avatar: s.avatar });
+      return;
+    }
+    if (s.due !== null && counter >= s.due) {
+      if (busy.has(chat.key)) {
+        Debug.record("bot", chat.session, { phase: "skip", why: "busy", counter, due: s.due });
+        return;
+      }
+      Debug.record("bot", chat.session, { phase: "due", counter, due: s.due, from: s.from });
+      busy.add(chat.key);
+      void advice(chat, counter).finally(() => busy.delete(chat.key));
+      return;
+    }
+    if (s.due === null && s.base !== null) {
+      const x = BOT_X_MIN + Math.floor(Math.random() * (BOT_X_MAX - BOT_X_MIN + 1));
+      s.due = s.base + x;
+      save(chat);
+      Debug.record("bot", chat.session, { phase: "roll", counter, base: s.base, x, due: s.due });
+      if (counter >= s.due && !busy.has(chat.key)) {
+        busy.add(chat.key);
+        void advice(chat, counter).finally(() => busy.delete(chat.key));
+      }
+      return;
+    }
+    Debug.record("bot", chat.session, { phase: "wait", counter, due: s.due });
+  }
+
+  async function advice(chat: Chat, counter: number): Promise<void> {
+    const s = state(chat);
+    const win = window(chat, s.from);
+    const system = bot_system(s.avatar);
+    const body = trim(chat, win.lines, system);
+    Debug.record("bot", chat.session, { phase: "call", counter, from: s.from, to: win.from, lines: win.lines.length, dropped: body.dropped, avatar: s.avatar });
+    try {
+      const ask = {
+        ...Chat.share(chat),
+        effort: "low",
+        system,
+        blocks: [{ text: body.text }],
+        imgs: [],
+        searches: 0,
+        server: "",
+        max: BOT_MAX_TOKENS,
+        tag: "bot",
+        bill: chat.mem.pay?.("chat", "bot"),
+      };
+      const call = AskAI.ask(ask as any, () => {});
+      const end = await call.done;
+      if (!end.ok) {
+        Debug.record("bot", chat.session, { phase: "fail", why: end.stop ?? "not ok" });
+        return;
+      }
+      let text = end.text.replace(/```[\s\S]*?```/g, " ").replace(/[*_#>`]/g, " ").replace(/\s+/g, " ").trim();
+      if (text === "") {
+        Debug.record("bot", chat.session, { phase: "fail", why: "empty" });
+        return;
+      }
+      if (text.length > BOT_MAX_CHARS) {
+        const cut = text.slice(0, BOT_MAX_CHARS);
+        const dot = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "), cut.lastIndexOf("? "));
+        text = (dot > 100 ? cut.slice(0, dot + 1) : cut.slice(0, cut.lastIndexOf(" "))).trim() + "…";
+      }
+      s.from = win.from;
+      s.base = counter;
+      s.at = Date.now();
+      s.due = null;
+      s.pending = { text, at: s.at };
+      save(chat);
+      Debug.record("bot", chat.session, { phase: "shown", counter, from: s.from, base: s.base, thoughtAt: s.at, chars: text.length, text });
+      Chat.all(chat, { $: "thought", text, at: s.at });
+    } catch (err) {
+      Debug.record("bot", chat.session, { phase: "fail", why: String((err as Error)?.message ?? err) });
+    }
+  }
+
+  export function avatar(chat: Chat, raw: string): Answer {
+    const name = bot_name(raw);
+    if (name === null) {
+      return { error: "Unknown bot." };
+    }
+    const s = state(chat);
+    if (s.avatar === name) {
+      return {};
+    }
+    s.avatar = name;
+    save(chat);
+    Debug.record("bot", chat.session, { phase: "avatar", avatar: name });
+    Chat.all(chat, Chat.state(chat));
+    return {};
+  }
+
+  export function close(chat: Chat): Answer {
+    const s = state(chat);
+    if (s.pending === null) {
+      return {};
+    }
+    s.pending = null;
+    save(chat);
+    Debug.record("bot", chat.session, { phase: "close" });
+    Chat.all(chat, { $: "thought-close" });
+    return {};
+  }
+
+  export function pending(chat: Chat, sock: Sock): void {
+    const s = state(chat);
+    if (s.pending === null) {
+      return;
+    }
+    if (Date.now() - s.pending.at >= BOT_LIFE_MS) {
+      s.pending = null;
+      save(chat);
+      Debug.record("bot", chat.session, { phase: "expire" });
+      return;
+    }
+    Chat.send(sock, { $: "thought", text: s.pending.text, at: s.pending.at });
+    Debug.record("bot", chat.session, { phase: "replay", thoughtAt: s.pending.at });
+  }
+
+  export function status(chat: Chat): object {
+    const s = state(chat);
+    return {
+      avatar: s.avatar,
+      due: s.due,
+      base: s.base,
+      from: s.from,
+      at: s.at,
+      pending: s.pending,
+      counter: chat.mem.count,
+      busy: busy.has(chat.key),
+    };
+  }
+}
 
 export namespace Main {
 

@@ -197,6 +197,10 @@ export function snapshot(limit = 120): object {
       count: ring.filter((event) => event.kind === "evict").length,
       recent: recent(12, "evict"),
     },
+    bot: {
+      count: ring.filter((event) => event.kind === "bot").length,
+      recent: ring.filter((event) => event.kind === "bot").slice(-20),
+    },
     labels: {
       count: ring.filter((event) => event.kind === "label").length,
       recent: ring.filter((event) => event.kind === "label").slice(-12),

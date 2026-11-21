@@ -1570,7 +1570,7 @@ header > .sound[aria-pressed="true"] {
   top: 0;
   bottom: auto;
   height: 100%;
-  left: calc((var(--free) + 100vw) / 2 - 600px);
+  left: calc((var(--free) + 100vw) / 2 - 600px + 22px);
   width: 1200px;
   background: transparent !important;
   pointer-events: auto;
@@ -3241,3 +3241,10 @@ footer {
 .ctx-tip[hidden] { display: none; }
 .ctx-tip b { display: block; margin-bottom: 3px; color: var(--ink); font: 500 9.5px/1.4 var(--sans); letter-spacing: .08em; text-transform: uppercase; }
 .ctx-tip span { display: block; }
+
+/* the head's selection block is empty until a node is picked; hide it so
+   the hint centers exactly over the skull */
+#skull-pane .skull-head-left:empty { display: none; }
+
+/* the hint wraps under itself, centred over the skull */
+#skull-pane .skull-head small { max-width: 300px; text-align: center; }

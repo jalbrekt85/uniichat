@@ -982,6 +982,7 @@ export namespace Chat {
     for (const { i, kind, text, date, images } of roots) {
       Chat.all(chat, { $: "entry", id: i, kind, text, date, images });
     }
+    Bot.due(chat);
     return { id: roots[0].i, end: chat.mem.count };
   }
 
@@ -1442,8 +1443,26 @@ export namespace Chat {
   }
 
   // a machine-readable snapshot for debugging the local instance
-  // a due crossing found at the end of a turn or on join: the next user
-  // message is not required to be the only moment the cycle can fire
+  // the moment a logged message reaches due: fire immediately, even while
+  // the main turn is still generating; oMLX queues the advice call
+  export function due(chat: Chat): void {
+    if (busy.has(chat.key)) {
+      return;
+    }
+    const s = state(chat);
+    if (s.due === null) {
+      return;
+    }
+    const counter = counter_of(chat);
+    if (counter < s.due) {
+      return;
+    }
+    Debug.record("bot", chat.session, { phase: "due", counter, due: s.due, from: s.from, source: "log" });
+    busy.add(chat.key);
+    void advice(chat, counter).finally(() => busy.delete(chat.key));
+  }
+
+  // a due crossing found at the end of a turn or on join: a fallback
   export function check(chat: Chat): void {
     if (chat.busy) {
       return;
@@ -2098,8 +2117,26 @@ export namespace Bot {
     Debug.record("bot", chat.session, { phase: "replay", thoughtAt: s.pending.at });
   }
 
-  // a due crossing found at the end of a turn or on join: the next user
-  // message is not required to be the only moment the cycle can fire
+  // the moment a logged message reaches due: fire immediately, even while
+  // the main turn is still generating; oMLX queues the advice call
+  export function due(chat: Chat): void {
+    if (busy.has(chat.key)) {
+      return;
+    }
+    const s = state(chat);
+    if (s.due === null) {
+      return;
+    }
+    const counter = counter_of(chat);
+    if (counter < s.due) {
+      return;
+    }
+    Debug.record("bot", chat.session, { phase: "due", counter, due: s.due, from: s.from, source: "log" });
+    busy.add(chat.key);
+    void advice(chat, counter).finally(() => busy.delete(chat.key));
+  }
+
+  // a due crossing found at the end of a turn or on join: a fallback
   export function check(chat: Chat): void {
     if (chat.busy) {
       return;

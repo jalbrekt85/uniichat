@@ -16,14 +16,14 @@ export const BOT_NAMES: Record<BotName, string> = {
 // the plush bubble palette per bot: light fill, deep fill, ink, accent
 export type BotPalette = { light: string; deep: string; ink: string; accent: string };
 export const BOT_PALETTE: Record<BotName, BotPalette> = {
-  clover: { light: "#8fe0fb", deep: "#2f9fd6", ink: "#062430", accent: "#2f9fd6" },
-  flower: { light: "#ffd0e0", deep: "#e873a8", ink: "#3a0f22", accent: "#e873a8" },
-  star: { light: "#ffe7a1", deep: "#e0ab3f", ink: "#33230a", accent: "#e0ab3f" },
-  ghost: { light: "#e2d8f7", deep: "#9b80d2", ink: "#241a3a", accent: "#9b80d2" },
-  mech: { light: "#d8e0e4", deep: "#7f949e", ink: "#182228", accent: "#7f949e" },
-  circle: { light: "#c4f3e4", deep: "#5cc9aa", ink: "#0c2b22", accent: "#5cc9aa" },
-  hexagon: { light: "#ffd3ab", deep: "#e28a45", ink: "#33190a", accent: "#e28a45" },
-  square: { light: "#ecd9cb", deep: "#b18c74", ink: "#2a1a10", accent: "#b18c74" },
+  clover: { light: "#D5F2FF", deep: "#96DEFF", ink: "#062B3A", accent: "#41C4FF" },
+  flower: { light: "#D1F4E1", deep: "#90E3B5", ink: "#06301C", accent: "#2FCB7A" },
+  star: { light: "#FBF7E6", deep: "#F6EBC1", ink: "#33280A", accent: "#EFDB8E" },
+  ghost: { light: "#FFFFFF", deep: "#DCD5EC", ink: "#241F35", accent: "#F4F2FA" },
+  mech: { light: "#E8EBF2", deep: "#C5CEDF", ink: "#182028", accent: "#95A6C4" },
+  circle: { light: "#E9DDFF", deep: "#C7A9FF", ink: "#1D0B38", accent: "#9A62FF" },
+  hexagon: { light: "#FBE1E1", deep: "#F4B3B3", ink: "#3A0D0D", accent: "#EB7575" },
+  square: { light: "#D3EFFF", deep: "#90D8FF", ink: "#04263A", accent: "#35B8FF" },
 };
 
 export type Personality = {

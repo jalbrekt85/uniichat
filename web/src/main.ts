@@ -1191,11 +1191,16 @@ function thought_render(text: string, at: number): void {
   thought_timer = window.setTimeout(() => thought_hide(true), Math.max(0, at + BOT_LIFE_MS - Date.now()));
 }
 
+let thought_tries = 0;
 function thought_show(text: string, at: number): void {
   const tip = thought_tip();
   if (tip === null) {
+    if (thought_tries++ < 24) {
+      window.setTimeout(() => thought_show(text, at), 250);
+    }
     return;
   }
+  thought_tries = 0;
   if (tip.state.isVisible) {
     thought_pending = { text, at };
     thought_hide(false);

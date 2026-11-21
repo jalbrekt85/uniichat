@@ -1121,6 +1121,7 @@ addEventListener("popstate", () => {
 const CTX_PARTS: Array<[string, string, string]> = [
   ["tree", "tree", "var(--accent)"],
   ["messages", "messages", "var(--ink)"],
+  ["images", "images", "var(--red)"],
   ["agent", "agent", "var(--accent-3)"],
   ["tools", "tools", "var(--accent-2)"],
   ["system", "system", "var(--mid)"],
@@ -1137,7 +1138,8 @@ function ctx_bytes(m: Extract<View.Server, { $: "context" }>): Record<string, nu
   const r = ctx_raw(m);
   return {
     tree: Number(r.tree ?? 0),
-    messages: Number(r.message ?? 0) + Number(r.notes ?? 0) + Number(r.images ?? 0),
+    messages: Number(r.message ?? 0) + Number(r.notes ?? 0),
+    images: Number(r.images ?? 0),
     agent: Number(r.agent ?? 0),
     tools: Number(r.tools ?? 0) + Number(r.tool ?? 0),
     system: Number(r.system ?? 0) + Number(r.harness ?? 0),
@@ -1159,7 +1161,7 @@ function ctx_title(m: Extract<View.Server, { $: "context" }>, key: string, label
     return label + " " + k(b.system) + " · prompt " + k(Number(r.system ?? 0)) + " + harness " + k(Number(r.harness ?? 0));
   }
   if (key === "messages") {
-    return label + " " + k(b.messages) + " · you " + k(Number(r.message ?? 0)) + " + notes " + k(Number(r.notes ?? 0)) + " + images " + k(Number(r.images ?? 0));
+    return label + " " + k(b.messages) + " · you " + k(Number(r.message ?? 0)) + " + notes " + k(Number(r.notes ?? 0));
   }
   return label + " " + k(b[key] ?? 0);
 }

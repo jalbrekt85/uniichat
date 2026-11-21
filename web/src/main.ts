@@ -1153,9 +1153,27 @@ function thought_hide(send: boolean): void {
 
 function thought_place(): void {
   const el = document.getElementById("thought");
-  if (el !== null) {
-    el.classList.add("below");
+  const avatar = document.querySelector<HTMLElement>("#fx-brand .bot-brand");
+  if (el === null || el.hidden || avatar === null) {
+    return;
   }
+  const a = avatar.getBoundingClientRect();
+  const brand = document.querySelector<HTMLElement>("header > .brand");
+  const after = brand !== null && brand.offsetParent !== null ? brand.getBoundingClientRect().right : a.right;
+  const w = el.offsetWidth;
+  const h = el.offsetHeight;
+  let left = after + 12;
+  if (left + w > innerWidth - 12) {
+    left = Math.max(12, a.left - w - 12);
+    el.classList.add("flip");
+  } else {
+    el.classList.remove("flip");
+  }
+  const top = Math.max(10, a.top - 6);
+  el.style.left = left + "px";
+  el.style.top = top + "px";
+  el.style.setProperty("--tail-w", Math.max(30, left - a.right - 2) + "px");
+  el.style.setProperty("--tail-y", Math.max(6, Math.min(h - 22, a.top + a.height / 2 - top - 11)) + "px");
 }
 
 function thought_render(text: string, at: number): void {
@@ -1209,6 +1227,7 @@ function init_thought(): void {
     }
   });
   el.append(bubble.root);
+  addEventListener("resize", thought_place);
   addEventListener("unii:bot-picker", (ev) => {
     if ((ev as CustomEvent).detail === true && !el.hidden) {
       thought_hide(false);

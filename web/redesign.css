@@ -3487,4 +3487,40 @@ footer {
 }
 .thought.in .thought-card .thought-text { animation: thought-text-in .26s ease .1s both; }
 .thought-float, .thought.below .thought-float { display: block; }
-.thought-tail, .thought.below .thought-tail { display: none; }
+.thought.below .thought-tail { display: none; }
+
+
+/* Attached to the rendered avatar: a tail bridges the gap. */
+.thought {
+  left: 0;
+  top: 0;
+  transform: none;
+  max-width: 430px;
+  display: block;
+}
+.thought-card {
+  max-width: 430px;
+  padding: 9px 30px 9px 12px;
+  border-radius: 14px;
+  font: 500 10.5px/1.4 ui-rounded, "SF Pro Rounded", var(--sans);
+}
+.thought-card .thought-tail {
+  display: block;
+  left: calc(-1 * var(--tail-w, 30px));
+  right: auto;
+  top: var(--tail-y, 18px);
+  bottom: auto;
+  width: var(--tail-w, 30px);
+  height: 26px;
+  transform: rotate(90deg);
+  opacity: 1;
+  overflow: visible;
+}
+.thought-card .thought-tail path { fill: color-mix(in oklab, var(--pl-deep) 90%, transparent); }
+.thought.flip .thought-card .thought-tail {
+  left: auto;
+  right: -15px;
+  transform: rotate(-90deg);
+}
+.thought-card .thought-close { top: 3px; right: 4px; }
+@media (max-width: 1349px) { .thought { display: flex !important; } }

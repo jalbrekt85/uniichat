@@ -428,7 +428,8 @@ export namespace Chat {
   // The pair's summaries if both already exist. If either is missing, put
   // the pair's two stored messages at the front of the compactor's real work
   // queue and return null. Never waits: the main turn continues.
-  export function summary(chat: Chat, ids: string[]): string | null {
+  // the tree parts of a pair's messages, and their slots
+  function parts_of(chat: Chat, ids: string[]): { parts: Array<{ l: number; i: number }>; slots: Set<number> } {
     const parts: Array<{ l: number; i: number }> = [];
     const slots = new Set<number>();
     for (const id of ids) {
@@ -444,6 +445,11 @@ export namespace Chat {
     if (parts.length === 0) {
       throw new Error("No stored tool calls to summarize.");
     }
+    return { parts, slots };
+  }
+
+  export function summary(chat: Chat, ids: string[]): string | null {
+    const { parts, slots } = parts_of(chat, ids);
     if (!parts.every((part) => Memory.built(chat.mem, part.l, part.i))) {
       Memory.focus(chat.mem, slots);
       return null;
@@ -455,6 +461,23 @@ export namespace Chat {
       out.push(Memory.text(chat.mem, { l: 0, i: tool }) + "\n" + Memory.text(chat.mem, { l: 0, i: echo }));
     }
     return out.join("\n\n");
+  }
+
+  // wait, bounded, for a focused pair's summaries: the main turn needs
+  // them to cut its prompt, so it waits here rather than send it whole
+  export async function settle(chat: Chat, ids: string[], ms: number): Promise<boolean> {
+    const { parts, slots } = parts_of(chat, ids);
+    const until = Date.now() + ms;
+    for (;;) {
+      if (parts.every((part) => Memory.built(chat.mem, part.l, part.i))) {
+        return true;
+      }
+      if (Date.now() >= until || chat.halt.signal.aborted) {
+        return false;
+      }
+      Memory.focus(chat.mem, slots);
+      await Bun.sleep(100);
+    }
   }
 
   export function share(chat: Chat): Share {
@@ -761,6 +784,7 @@ export namespace Chat {
       const hooks = {
         window: () => Chat.window(chat),
         summary: (ids: string[]) => Chat.summary(chat, ids),
+        settle: (ids: string[], ms: number) => Chat.settle(chat, ids, ms),
         generating: (on: boolean) => {
           chat.generating = on;
           Memory.generating(on);

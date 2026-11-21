@@ -405,9 +405,18 @@ export namespace Agent {
         if (estimate <= window * 0.5) {
           break;
         }
-        const note = run.hooks?.summary?.([...pair.ids]);
-        if (note === undefined || note === null) {
-          break;
+        let note = run.hooks?.summary?.([...pair.ids]) ?? null;
+        if (note === null) {
+          // the miss focused the pair at the front of the compactor's queue;
+          // wait for it rather than send a prompt already over the window
+          const built = await run.hooks?.settle?.([...pair.ids], 20000) ?? false;
+          if (!built) {
+            break;
+          }
+          note = run.hooks?.summary?.([...pair.ids]) ?? null;
+          if (note === null) {
+            break;
+          }
         }
         ready.push(pair);
         notes.push(note);

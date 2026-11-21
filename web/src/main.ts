@@ -1119,16 +1119,50 @@ addEventListener("popstate", () => {
 // only by its agents, an agent's page saying whether it runs
 // the prompt's body, by part, as a stacked meter under the skull
 const CTX_PARTS: Array<[string, string, string]> = [
-  ["agent", "agent", "#50e3a4"],
-  ["tool", "tool out", "#7aa7ff"],
   ["tree", "tree", "var(--accent)"],
-  ["system", "system", "#9a90b5"],
-  ["tools", "tools", "#6b637c"],
-  ["harness", "harness", "#b6adc9"],
-  ["message", "message", "var(--ink)"],
-  ["notes", "notes", "#f0b35b"],
-  ["images", "images", "#ff9bc8"],
+  ["messages", "messages", "var(--ink)"],
+  ["agent", "agent", "var(--accent-3)"],
+  ["tools", "tools", "var(--accent-2)"],
+  ["system", "system", "var(--mid)"],
 ];
+
+// the nine raw parts, merged to the five the meter shows; the log keeps
+// the nine, so a stored context from before the merge still draws
+function ctx_raw(m: Extract<View.Server, { $: "context" }>): Record<string, number> {
+  const raw = (m as any).raw as Record<string, number> | undefined;
+  return raw ?? (m as unknown as Record<string, number>);
+}
+
+function ctx_bytes(m: Extract<View.Server, { $: "context" }>): Record<string, number> {
+  const r = ctx_raw(m);
+  return {
+    tree: Number(r.tree ?? 0),
+    messages: Number(r.message ?? 0) + Number(r.notes ?? 0) + Number(r.images ?? 0),
+    agent: Number(r.agent ?? 0),
+    tools: Number(r.tools ?? 0) + Number(r.tool ?? 0),
+    system: Number(r.system ?? 0) + Number(r.harness ?? 0),
+  };
+}
+
+function ctx_tok(m: Extract<View.Server, { $: "context" }>, bytes: number): number {
+  return m.total > 0 ? (bytes / m.total) * m.tokens : 0;
+}
+
+function ctx_title(m: Extract<View.Server, { $: "context" }>, key: string, label: string): string {
+  const r = ctx_raw(m);
+  const b = ctx_bytes(m);
+  const k = (bytes: number): string => (ctx_tok(m, bytes) / 1000).toFixed(1) + "k";
+  if (key === "tools") {
+    return label + " " + k(b.tools) + " · schemas " + k(Number(r.tools ?? 0)) + " + results " + k(Number(r.tool ?? 0));
+  }
+  if (key === "system") {
+    return label + " " + k(b.system) + " · prompt " + k(Number(r.system ?? 0)) + " + harness " + k(Number(r.harness ?? 0));
+  }
+  if (key === "messages") {
+    return label + " " + k(b.messages) + " · you " + k(Number(r.message ?? 0)) + " + notes " + k(Number(r.notes ?? 0)) + " + images " + k(Number(r.images ?? 0));
+  }
+  return label + " " + k(b[key] ?? 0);
+}
 
 const CTX_SHOWN: Record<string, number> = {};
 let ctx_built = false;
@@ -1209,14 +1243,14 @@ function draw_context(m: Extract<View.Server, { $: "context" }>): void {
     return;
   }
   const window = m.window ?? 81920;
+  const bytes = ctx_bytes(m);
   const to: Record<string, number> = {};
   for (const [key, label] of CTX_PARTS) {
-    const bytes = Number((m as any)[key] ?? 0);
-    to[key] = m.total > 0 ? (bytes / m.total) * m.tokens : 0;
+    to[key] = ctx_tok(m, bytes[key] ?? 0);
     const seg = ctx_segs.get(key);
     if (seg !== undefined) {
       seg.style.width = Math.max(0, Math.min(100, (to[key] / window) * 100)) + "%";
-      seg.title = label + ": " + (to[key] / 1000).toFixed(1) + "k tokens, " + bytes + " B";
+      seg.title = ctx_title(m, key, label);
     }
   }
   ctx_card?.classList.remove("idle");

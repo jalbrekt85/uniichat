@@ -3208,7 +3208,7 @@ footer {
 .ctx-bar { position: relative; display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: color-mix(in oklab, var(--ink) 8%, transparent); }
 .ctx-bar > i { display: block; height: 100%; transition: width .55s cubic-bezier(.22, .61, .36, 1); }
 .ctx-bar > i.ctx-tick { position: absolute; top: -2px; bottom: -2px; left: 80%; width: 1px; background: color-mix(in oklab, var(--ink) 24%, transparent); transition: none; }
-.ctx-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 14px; margin: 9px 0 0; padding: 0; list-style: none; }
+.ctx-legend { display: grid; grid-template-columns: 1fr; gap: 2px 0; margin: 9px 0 0; padding: 0; list-style: none; }
 .ctx-legend li { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--soft); }
 .ctx-legend .dot { flex: none; width: 6px; height: 6px; border-radius: 2px; }
 .ctx-legend .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

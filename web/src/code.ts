@@ -32,15 +32,15 @@ const ALIASES: Record<string, string> = {
 };
 
 export function highlightCode(root: ParentNode): void {
-  root.querySelectorAll<HTMLElement>("pre > code").forEach((code) => {
+  root.querySelectorAll<HTMLElement>("pre > code, code.cmd").forEach((code) => {
     if (code.dataset.highlighted === "yes") return;
     const pre = code.closest("pre");
-    if (pre === null || pre.classList.contains("diff")) {
+    if (pre !== null && pre.classList.contains("diff")) {
       code.dataset.highlighted = "yes";
       return;
     }
     const classLang = [...code.classList].find((name) => name.startsWith("language-"))?.slice(9) ?? "";
-    if (pre.dataset.output !== undefined && classLang === "") {
+    if (pre !== null && pre.dataset.output !== undefined && classLang === "") {
       code.dataset.highlighted = "yes";
       return;
     }

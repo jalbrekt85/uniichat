@@ -1871,21 +1871,6 @@ body.confirm-open { overflow: hidden; }
 /* ------------------------------------------------------------------ */
 /* Tool arguments and results, by tool and by what the result contains. */
 
-.tool-fields { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-.tool-field {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 5px;
-  max-width: 100%;
-  padding: 3px 7px;
-  border: 1px solid color-mix(in oklab, var(--tool-accent) 18%, var(--hair));
-  border-radius: 5px;
-  background: color-mix(in oklab, var(--tool-accent) 4%, transparent);
-  color: var(--mid);
-  font: 8.5px/1.35 var(--mono);
-}
-.tool-field > span { color: var(--soft); font: 7px/1.3 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
-.tool-field b { min-width: 0; color: var(--ink); font-weight: 500; overflow-wrap: anywhere; }
 .tool-input-content, .tool-edit pre {
   max-height: 14em;
   margin: 8px 0 0;
@@ -2095,14 +2080,6 @@ header .credits { border: 0; background: transparent; }
 .msg.tool[data-tool="shell"] pre { background: color-mix(in oklab, var(--ink) 3%, transparent); border: 0; color: var(--ink); }
 .msg.tool[data-tool="spawn"] { background-image: none; }
 
-.tool-field {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  padding: 0 12px 0 0;
-}
-.tool-field > span { color: var(--soft); }
-.tool-field b { color: var(--mid); }
 .tool-input-content, .tool-edit pre {
   border: 0;
   border-radius: 7px;
@@ -3248,3 +3225,6 @@ footer {
 
 /* the hint wraps under itself, centred over the skull */
 #skull-pane .skull-head small { max-width: 300px; text-align: center; }
+
+/* a shell call's command is code too: colour it, keep the head's flow */
+.call code.cmd { padding: 0; border: 0; background: none; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }

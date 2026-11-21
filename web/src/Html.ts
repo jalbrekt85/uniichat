@@ -95,65 +95,36 @@ function call_html(c: Call.Call): string {
   return head_html(c, c.head, c.device) + tool_input_html(c) + c.blocks.map(block_html).join("");
 }
 
-// Each tool's arguments get their own compact input panel. Write shows the
-// content it will create; edit shows its old/new pairs; the others expose
-// the meaningful metadata the head abbreviates.
+// the language a path suggests, for the input panel's code
+const LANG: Record<string, string> = {
+  rs: "rust", ts: "typescript", tsx: "typescript", js: "javascript", jsx: "javascript", mjs: "javascript", cjs: "javascript",
+  py: "python", go: "go", c: "c", h: "c", cpp: "cpp", cc: "cpp", hpp: "cpp", java: "java", sql: "sql",
+  yml: "yaml", yaml: "yaml", json: "json", md: "markdown", html: "xml", svg: "xml", css: "css", sh: "bash", zsh: "bash",
+};
+
+// the call's head already carries the path, the read lines, a search's
+// query and so on; only the payload a line cannot hold goes here: write's
+// content, edit's old/new pairs, both highlighted by their file's language
 function tool_input_html(c: Call.Call): string {
   const x = c.input;
-  const fields: string[] = [];
-  const field = (label: string, value: string): void => {
-    if (value.trim() !== "") {
-      fields.push(`<span class="tool-field"><span>${esc(label)}</span><b>${esc(value)}</b></span>`);
-    }
+  const lang = (path: string): string => {
+    const dot = path.lastIndexOf(".");
+    const name = dot < 0 ? "" : (LANG[path.slice(dot + 1).toLowerCase()] ?? "");
+    return name === "" ? "" : ` class="language-${name}"`;
   };
-  switch (c.name) {
-    case "read":
-      field("path", String(x.path ?? ""));
-      if (x.offset !== undefined || x.limit !== undefined) field("lines", String(x.offset ?? 1) + "–" + String(x.limit === undefined ? "end" : Number(x.offset ?? 1) + Number(x.limit) - 1));
-      break;
-    case "write":
-      field("file", String(x.path ?? ""));
-      if (typeof x.content === "string") field("lines", String(x.content.split("\n").length));
-      break;
-    case "edit":
-      field("files", c.head);
-      if (Array.isArray(x.edits)) field("edits", String(x.edits.length));
-      break;
-    case "spawn":
-      if (Array.isArray(x.tasks)) field("tasks", String(x.tasks.length));
-      if (typeof x.effort === "string") field("effort", x.effort);
-      break;
-    case "tell":
-      field("to", String(x.name ?? ""));
-      break;
-    case "computer":
-      if (typeof x.task === "string") field("task", x.task.length > 60 ? x.task.slice(0, 60) + "…" : x.task);
-      break;
-    case "web_search":
-      field("query", String(x.query ?? ""));
-      break;
-    case "fetch_url":
-      field("url", String(x.url ?? ""));
-      break;
-    case "zoom":
-    case "date":
-      field("target", c.head);
-      break;
-  }
-  const meta = fields.length === 0 ? "" : `<div class="tool-fields">${fields.join("")}</div>`;
   if (c.name === "write" && typeof x.content === "string" && x.content !== "") {
-    return meta + `<pre class="tool-input-content"><code>${esc(x.content)}</code></pre>`;
+    return `<pre class="tool-input-content"><code${lang(String(x.path ?? ""))}>${esc(x.content)}</code></pre>`;
   }
   if (c.name === "edit" && Array.isArray(x.edits)) {
     const edits = (x.edits as Array<{ path?: string; old?: string; new?: string }>).map((edit, i) => {
       const path = typeof edit.path === "string" && edit.path !== "" ? edit.path : c.head !== "" ? c.head : "edit " + (i + 1);
       const old = typeof edit.old === "string" ? edit.old : "";
       const now = typeof edit.new === "string" ? edit.new : "";
-      return `<div class="tool-edit"><span class="tool-edit-label">${esc(path)}</span>${old === "" ? "" : `<pre class="tool-edit-old"><code>${esc(old)}</code></pre>`}${now === "" ? "" : `<pre class="tool-edit-new"><code>${esc(now)}</code></pre>`}</div>`;
+      return `<div class="tool-edit"><span class="tool-edit-label">${esc(path)}</span>${old === "" ? "" : `<pre class="tool-edit-old"><code${lang(path)}>${esc(old)}</code></pre>`}${now === "" ? "" : `<pre class="tool-edit-new"><code${lang(path)}>${esc(now)}</code></pre>`}</div>`;
     }).join("");
-    return meta + `<div class="tool-edits">${edits}</div>`;
+    return `<div class="tool-edits">${edits}</div>`;
   }
-  return meta;
+  return "";
 }
 
 // line icons rather than emoji: each kind of call gets a silhouette that
@@ -182,7 +153,8 @@ function head_html(c: Call.Call, text: string, device: string): string {
   const icon  = `<span class="ic">${tool_icon(c.name)}</span>`;
   const verb  = c.name === "" ? "" : `<b>${esc(c.name)}</b> `;
   const where = device === "" ? "" : `<span class="on">· ${esc(device)}</span>`;
-  return `<p class="call" data-tool="${esc(c.name)}">${where}${icon}${verb}${esc(text)}</p>`;
+  const body  = c.name === "shell" ? `<code class="cmd language-bash">${esc(text)}</code>` : esc(text);
+  return `<p class="call" data-tool="${esc(c.name)}">${where}${icon}${verb}${body}</p>`;
 }
 
 function images_html(names: string[], session: string): string {

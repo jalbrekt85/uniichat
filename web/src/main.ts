@@ -1091,7 +1091,55 @@ async function lost(up: boolean): Promise<boolean> {
 // a pick changed shows what it is now (a click on a knob moves it). The
 // rows change with what they show: a state (credits, ~10/s importing)
 // only by its agents, an agent's page saying whether it runs
+// the prompt's body, by part, as a stacked meter under the skull
+const CTX_PARTS: Array<[string, string, string]> = [
+  ["agent", "agent", "#50e3a4"],
+  ["tool", "tool out", "#7aa7ff"],
+  ["tree", "tree", "var(--accent)"],
+  ["system", "system", "#9a90b5"],
+  ["tools", "tools", "#6b637c"],
+  ["harness", "harness", "#b6adc9"],
+  ["message", "message", "var(--ink)"],
+  ["notes", "notes", "#f0b35b"],
+  ["images", "images", "#ff9bc8"],
+];
+
+function draw_context(m: Extract<View.Server, { $: "context" }>): void {
+  const panel  = document.getElementById("ctx");
+  const bar    = document.getElementById("ctx-bar");
+  const legend = document.getElementById("ctx-legend");
+  const total  = document.getElementById("ctx-total");
+  if (panel === null || bar === null || legend === null || total === null) {
+    return;
+  }
+  panel.hidden = false;
+  const window = m.window ?? 81920;
+  const tokens = m.tokens;
+  bar.querySelectorAll("i:not(.ctx-tick)").forEach((el) => el.remove());
+  legend.replaceChildren();
+  for (const [key, label, color] of CTX_PARTS) {
+    const bytes = Number((m as any)[key] ?? 0);
+    const tok = m.total > 0 ? (bytes / m.total) * tokens : 0;
+    const seg = document.createElement("i");
+    seg.style.width = Math.max(0, Math.min(100, (tok / window) * 100)) + "%";
+    seg.style.background = color;
+    seg.title = label + ": " + (tok / 1000).toFixed(1) + "k tokens, " + bytes + " B";
+    bar.appendChild(seg);
+    const li = document.createElement("li");
+    li.innerHTML = '<span class="dot" style="background:' + color + '"></span>'
+      + '<span class="name">' + label + '</span>'
+      + '<span class="val">' + (tok / 1000).toFixed(1) + 'k</span>';
+    legend.appendChild(li);
+  }
+  total.textContent = (tokens / 1000).toFixed(1) + "k / " + (window / 1000).toFixed(1) + "k";
+  total.classList.toggle("over", tokens > window);
+}
+
 function hear(msg: View.Server): void {
+  if (msg.$ === "context") {
+    draw_context(msg);
+    return;
+  }
   const was = View.view_pick(v);
   const agents = v.agents.join();
   const beforeBusy = v.busy;

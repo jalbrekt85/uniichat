@@ -9,7 +9,7 @@
 // agent's page is its log, kept live. The AI notice (AI) opens the chat
 // and comes again before a message in another 3-hour window.
 
-import type { Kind, Vendor } from "./AskAI.ts";
+import type { ContextParts, Kind, Vendor } from "./AskAI.ts";
 import { topup } from "./Import.ts";
 import * as Call from "./Call.ts";
 import * as Md from "./Md.ts";
@@ -113,6 +113,7 @@ export type Server =
   | ({ $: "entry"; agent?: string; id?: number } & Entry)
   | { $: "delta"; agent?: string; kind: Kind; text: string; fresh?: boolean }
   | { $: "live"; agent?: string; live: Live[] }
+  | ({ $: "context" } & ContextParts & { window: number | null; trigger: number | null })
   | ({ $: "state" } & State)
   | { $: "agent"; name: string; found: boolean }
   | { $: "note"; text: string }

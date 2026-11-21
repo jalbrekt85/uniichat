@@ -1541,8 +1541,8 @@ header > .sound[aria-pressed="true"] {
     position: absolute;
     left: 12%;
     right: 12%;
-    top: 12%;
-    bottom: 12%;
+    top: 4%;
+    bottom: 50%;
     border-radius: 50%;
     background: radial-gradient(circle, color-mix(in oklab, var(--accent) 4%, transparent), transparent 68%);
     pointer-events: none;
@@ -1557,13 +1557,14 @@ header > .sound[aria-pressed="true"] {
   #jump { left: calc((100vw - var(--skull) + var(--rail)) / 2); }
 }
 
-#fx-skull { position: absolute; inset: 0; background: transparent !important; pointer-events: none; }
+#fx-skull { position: absolute; inset: 0 0 auto 0; height: 52%; background: transparent !important; pointer-events: none; }
 .skull-ui { position: absolute; inset: 0; pointer-events: none; }
 #log { position: relative; z-index: 1; }
 .skull-canvas {
   position: absolute;
   top: 0;
-  bottom: 0;
+  bottom: auto;
+  height: 100%;
   left: calc(100vw - var(--skull) / 2 - 600px);
   width: 1200px;
   background: transparent !important;
@@ -3156,3 +3157,40 @@ footer {
   transition: color .16s ease, border-color .16s ease, background-color .16s ease;
 }
 .skull-zoom-back:hover { color: var(--ink); border-color: color-mix(in oklab, var(--accent) 28%, var(--hair)); }
+
+/* Prompt context meter: a compact ledger under the skull. */
+#ctx {
+  position: absolute;
+  right: 24px;
+  top: 52%;
+  bottom: 84px;
+  width: min(380px, calc(var(--skull) - 48px));
+  display: grid;
+  align-items: center;
+  pointer-events: none;
+  z-index: 2;
+}
+.ctx-card {
+  width: 100%;
+  padding: 14px 16px 13px;
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--paper) 78%, transparent);
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+  font: 10px/1.5 var(--mono);
+  letter-spacing: -.005em;
+  color: var(--soft);
+}
+#ctx[hidden] { display: none; }
+.ctx-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .14em; font-size: 9px; color: var(--mid); }
+.ctx-head b { font-weight: 500; color: var(--ink); letter-spacing: .02em; font-size: 10px; font-variant-numeric: tabular-nums; }
+.ctx-head b.over { color: var(--red); }
+.ctx-bar { position: relative; display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: color-mix(in oklab, var(--ink) 8%, transparent); }
+.ctx-bar > i { display: block; height: 100%; transition: width .24s ease; }
+.ctx-bar > i.ctx-tick { position: absolute; top: -2px; bottom: -2px; left: 80%; width: 1px; background: color-mix(in oklab, var(--ink) 24%, transparent); transition: none; }
+.ctx-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 14px; margin: 9px 0 0; padding: 0; list-style: none; }
+.ctx-legend li { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--soft); }
+.ctx-legend .dot { flex: none; width: 6px; height: 6px; border-radius: 2px; }
+.ctx-legend .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctx-legend .val { margin-left: auto; color: var(--mid); font-variant-numeric: tabular-nums; }

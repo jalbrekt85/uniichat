@@ -89,6 +89,24 @@ export type EvictHooks = {
   window?: () => number | null;
   summary?: (ids: string[]) => string | null;
   generating?: (on: boolean) => void;
+  // what the next request's body is made of, in bytes (and its token
+  // estimate), when it changes: the context panel and the debug log
+  context?: (parts: ContextParts) => void;
+};
+
+// a prompt's body, by what it is made of, in bytes; tokens: its estimate
+export type ContextParts = {
+  system  : number;
+  tools   : number;
+  tree    : number;
+  harness : number;
+  message : number;
+  agent   : number;
+  tool    : number;
+  notes   : number;
+  images  : number;
+  total   : number;
+  tokens  : number;
 };
 
 // searches: the most web searches it runs (0: no web tools)
@@ -104,6 +122,9 @@ export type Ask = Pick & {
   cut?      : number;
   // the debug surface: "main", "compactor", "agent", "watchdog"
   tag?      : string;
+  // the view's bytes (tree summaries), the harness notes' and the user
+  // message's: a prompt's other parts are counted from its items
+  context?  : { tree: number; harness: number; message: number };
   bill?     : Bill;
   yields?   : string;
   hooks?    : EvictHooks;

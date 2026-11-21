@@ -32,7 +32,7 @@
 // cut. A paid request is booked first (worst, Bill: AskAI.ts), then takes
 // its place in single flight (AskAI.wait).
 
-import { AskAI, type Grant, type Cost, type Ask, type Block, type Flight, type Try, type End, type Event, type Img, type Kind, type Say } from "./AskAI.ts";
+import { AskAI, type Grant, type Cost, type Ask, type Block, type Flight, type Try, type End, type Event, type Img, type Kind, type Say, type ContextParts } from "./AskAI.ts";
 import { Anthropic } from "./Anthropic.ts";
 import { OpenAI } from "./OpenAI.ts";
 import { Zai } from "./Zai.ts";
@@ -201,6 +201,44 @@ export namespace Agent {
     return items.reduce((n, item) => n + Buffer.byteLength(JSON.stringify(item)), 0);
   }
 
+  // what a request's body is made of, by part, in bytes; tokens: its
+  // estimate at the last request's bytes-per-token (a quarter, if none)
+  export function contextParts(ask: Ask, sent: Item[], tools: unknown[], body: unknown, run: Run): ContextParts {
+    const bytes = (v: unknown) => Buffer.byteLength(JSON.stringify(v));
+    const parts: ContextParts = {
+      system : bytes(ask.system),
+      tools  : bytes(tools),
+      tree   : ask.context?.tree ?? 0,
+      harness: ask.context?.harness ?? 0,
+      message: ask.context?.message ?? 0,
+      agent  : 0,
+      tool   : 0,
+      notes  : 0,
+      images : 0,
+      total  : bytes(body),
+      tokens : 0,
+    };
+    for (const item of sent) {
+      if (item.$ === "Turn") {
+        parts.agent += bytes(item);
+      } else if (item.$ === "Back") {
+        parts.tool += bytes(item);
+      } else if (item.$ === "User") {
+        if ((item.parts?.[0]?.text ?? "").startsWith("Dropped steps:")) {
+          parts.notes += bytes(item);
+        }
+        for (const img of item.imgs ?? []) {
+          parts.images += img.data.length;
+        }
+      } else {
+        parts.notes += bytes(item);
+      }
+    }
+    const ratio = run.inputTokens !== undefined && run.bodyBytes ? run.inputTokens / run.bodyBytes : 1 / 4;
+    parts.tokens = Math.round(parts.total * ratio);
+    return parts;
+  }
+
   export function preview(item: Item): string {
     if (item.$ === "User") {
       return item.parts.map((part) => part.text).join("\n").slice(0, 500);
@@ -321,6 +359,7 @@ export namespace Agent {
     type Pair = { turn: Item; back: Item; ids: string[] };
     let packets: Item[] = [];
     let pairs: Pair[] = [];
+    let ctxSig = "";
     // the note that stands in for evicted pairs, once one exists
     let reminder: Item | null = null;
     const make = (max: number) => {
@@ -331,6 +370,14 @@ export namespace Agent {
       const packetHashes = packets.map((packet) => String(Bun.hash(JSON.stringify(packet))));
       const body = wire.body(ask, sent, tools, max);
       run.itemsBytes = Agent.itemsBytes(items);
+      if (run.hooks?.context !== undefined) {
+        const parts = Agent.contextParts(ask, sent, tools, body, run);
+        const sig = [parts.system, parts.tools, parts.tree, parts.harness, parts.message, parts.agent, parts.tool, parts.notes, parts.images, parts.total, parts.tokens].join(",");
+        if (sig !== ctxSig) {
+          ctxSig = sig;
+          run.hooks.context(parts);
+        }
+      }
       if (LIVE !== null && LIVE.items === items) {
         const live = LIVE;
         const sentHash = String(Bun.hash(JSON.stringify(sent)));

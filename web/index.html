@@ -15,8 +15,8 @@
 <title>UniiChat</title>
 <link rel="icon" href="/favicon.svg">
 <link rel="stylesheet" href="/style.css?v=20261119l">
-<link rel="stylesheet" href="/redesign.css?v=20261121g">
-<script type="module" src="/app.js?v=20261121i"></script>
+<link rel="stylesheet" href="/redesign.css?v=20261121h">
+<script type="module" src="/app.js?v=20261121j"></script>
 </head>
 <!-- the page, as a guest sees it until signed in (web/src/main.ts) -->
 <body class="guest">
@@ -76,6 +76,13 @@
 <main id="account" hidden></main>
 <aside id="skull-pane" aria-label="Memory tree">
   <div id="fx-skull"></div>
+  <section id="ctx" class="ctx" hidden aria-label="Prompt context">
+    <div class="ctx-card">
+      <div class="ctx-head"><span>context</span><b id="ctx-total">—</b></div>
+      <div class="ctx-bar" id="ctx-bar"><i class="ctx-tick" aria-hidden="true"></i></div>
+      <ul class="ctx-legend" id="ctx-legend"></ul>
+    </div>
+  </section>
 </aside>
 <footer>
   <div id="toast" role="status" aria-live="polite" hidden></div>

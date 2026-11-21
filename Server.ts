@@ -37,7 +37,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import type { ServerWebSocket } from "bun";
 import { Agent, READING } from "./Agent.ts";
-import { AskAI, type Bill, type Grant, type Call, type End, type Event, type Kind, type Say, type Sink } from "./AskAI.ts";
+import { AskAI, type Bill, type Grant, type Call, type End, type Event, type Kind, type Say, type Sink, type ContextParts } from "./AskAI.ts";
 import { Billing, type Wallet } from "./Billing.ts";
 import { clip_pages } from "./Clip.ts";
 import { Label } from "./Label.ts";
@@ -457,6 +457,14 @@ export namespace Chat {
     return out.join("\n\n");
   }
 
+  // what the next request is made of, for the side panel and the log
+  export function context(chat: Chat, parts: ContextParts): void {
+    const window = Chat.window(chat);
+    const msg = { $: "context", ...parts, window, trigger: window !== null && window > 0 ? Math.round(window * 0.8) : null };
+    Chat.all(chat, msg);
+    Debug.record("context", "main", { ...msg, session: chat.session });
+  }
+
   export function share(chat: Chat): Share {
     const system = Tools.system(MASTER);
     return { ...Pick.ask(chat.pick), system, searches: 0, server: "" };
@@ -755,12 +763,21 @@ export namespace Chat {
       chat.eye = Chat.eye(mem, from);
       chat.socks.forEach((sock) => Chat.show(chat, sock));
       const bill = mem.pay?.("chat", String(msgs[0].id));
-      const blocks = [...view, Tools.devices(chat.tools, chat.work), { text: HEAD + text, mark: true }];
+      const devices = Tools.devices(chat.tools, chat.work);
+      const work = Tools.at_work(chat.tools);
+      const head = { text: HEAD + text, mark: true };
+      const blocks = [...view, devices, work, head];
+      const context = {
+        tree: view.reduce((n, b) => n + Buffer.byteLength(b.text), 0),
+        harness: Buffer.byteLength(devices.text) + Buffer.byteLength(work.text),
+        message: Buffer.byteLength(head.text),
+      };
       const share = Chat.share(chat);
       const blockBytes = blocks.reduce((n, b) => n + Buffer.byteLength(b.text), 0);
       const hooks = {
         window: () => Chat.window(chat),
         summary: (ids: string[]) => Chat.summary(chat, ids),
+        context: (parts: ContextParts) => Chat.context(chat, parts),
         generating: (on: boolean) => {
           chat.generating = on;
           Memory.generating(on);
@@ -769,7 +786,7 @@ export namespace Chat {
       // a cloud vendor runs the server-side search itself; local oMLX
       // cannot and has the harness's own web_search tool instead
       const searches = chat.pick.vendor === "local-api" ? 0 : SEARCHES;
-      const ask = { ...share, searches, server, blocks, imgs, bill, tag: "main", hooks };
+      const ask = { ...share, searches, server, blocks, imgs, bill, tag: "main", context, hooks };
       chat.model = chat.pick.model;
       chat.asked = true;
       chat.open = 0;

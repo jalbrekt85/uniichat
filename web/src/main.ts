@@ -193,6 +193,7 @@ async function boot(): Promise<void> {
   mountShell();
   initPolish();
   initPalette();
+  reset_ctx();
   connect();
   if (q.has("paid")) {
     toast("Payment received. Your credit shows up in a moment.");
@@ -1099,10 +1100,7 @@ function switch_session(id: string, push = true): void {
   View.view_reset(v, want);
   P.session = want;
   save_sessions();
-  const panel = document.getElementById("ctx");
-  if (panel !== null) {
-    panel.hidden = true;
-  }
+  reset_ctx();
   if (push) {
     history.pushState(null, "", want === "" ? "/" : "/?session=" + encodeURIComponent(want));
   }
@@ -1132,35 +1130,125 @@ const CTX_PARTS: Array<[string, string, string]> = [
   ["images", "images", "#ff9bc8"],
 ];
 
-function draw_context(m: Extract<View.Server, { $: "context" }>): void {
-  const panel  = document.getElementById("ctx");
-  const bar    = document.getElementById("ctx-bar");
-  const legend = document.getElementById("ctx-legend");
-  const total  = document.getElementById("ctx-total");
-  if (panel === null || bar === null || legend === null || total === null) {
+const CTX_SHOWN: Record<string, number> = {};
+let ctx_built = false;
+let ctx_raf = 0;
+const ctx_segs = new Map<string, HTMLElement>();
+const ctx_vals = new Map<string, HTMLElement>();
+let ctx_total: HTMLElement | null = null;
+let ctx_card: HTMLElement | null = null;
+
+// the meter exists from the first paint; the data fills it in
+function build_ctx(): void {
+  if (ctx_built) {
     return;
   }
-  panel.hidden = false;
-  const window = m.window ?? 81920;
-  const tokens = m.tokens;
-  bar.querySelectorAll("i:not(.ctx-tick)").forEach((el) => el.remove());
-  legend.replaceChildren();
+  const bar = document.getElementById("ctx-bar");
+  const legend = document.getElementById("ctx-legend");
+  const total = document.getElementById("ctx-total");
+  const card = document.querySelector<HTMLElement>("#ctx .ctx-card");
+  if (bar === null || legend === null || total === null || card === null) {
+    return;
+  }
+  ctx_built = true;
+  ctx_total = total;
+  ctx_card = card;
   for (const [key, label, color] of CTX_PARTS) {
-    const bytes = Number((m as any)[key] ?? 0);
-    const tok = m.total > 0 ? (bytes / m.total) * tokens : 0;
     const seg = document.createElement("i");
-    seg.style.width = Math.max(0, Math.min(100, (tok / window) * 100)) + "%";
     seg.style.background = color;
-    seg.title = label + ": " + (tok / 1000).toFixed(1) + "k tokens, " + bytes + " B";
+    seg.style.width = "0%";
     bar.appendChild(seg);
+    ctx_segs.set(key, seg);
     const li = document.createElement("li");
     li.innerHTML = '<span class="dot" style="background:' + color + '"></span>'
       + '<span class="name">' + label + '</span>'
-      + '<span class="val">' + (tok / 1000).toFixed(1) + 'k</span>';
+      + '<span class="val">—</span>';
     legend.appendChild(li);
+    const val = li.querySelector<HTMLElement>(".val");
+    if (val !== null) {
+      ctx_vals.set(key, val);
+    }
+    CTX_SHOWN[key] = 0;
   }
-  total.textContent = (tokens / 1000).toFixed(1) + "k / " + (window / 1000).toFixed(1) + "k";
-  total.classList.toggle("over", tokens > window);
+  card.classList.add("idle");
+}
+
+// the numbers count up while the bar glides, so a new turn reads as one
+// motion rather than a jump
+function tween_ctx(to: Record<string, number>, tokens: number, window: number): void {
+  cancelAnimationFrame(ctx_raf);
+  const from: Record<string, number> = { ...CTX_SHOWN };
+  const fromTotal = Object.values(CTX_SHOWN).reduce((n, v) => n + v, 0);
+  const start = performance.now();
+  const step = (now: number): void => {
+    const t = Math.min(1, (now - start) / 550);
+    const e = 1 - Math.pow(1 - t, 3);
+    const shownTotal = fromTotal + (tokens - fromTotal) * e;
+    for (const [key] of CTX_PARTS) {
+      const v = from[key] + (to[key] - from[key]) * e;
+      CTX_SHOWN[key] = v;
+      const val = ctx_vals.get(key);
+      if (val !== undefined) {
+        val.textContent = (v / 1000).toFixed(1) + "k";
+      }
+    }
+    if (ctx_total !== null) {
+      ctx_total.textContent = (shownTotal / 1000).toFixed(1) + "k / " + (window / 1000).toFixed(1) + "k";
+      ctx_total.classList.toggle("over", shownTotal > window);
+    }
+    if (t < 1) {
+      ctx_raf = requestAnimationFrame(step);
+    }
+  };
+  ctx_raf = requestAnimationFrame(step);
+}
+
+function draw_context(m: Extract<View.Server, { $: "context" }>): void {
+  build_ctx();
+  if (!ctx_built) {
+    return;
+  }
+  const window = m.window ?? 81920;
+  const to: Record<string, number> = {};
+  for (const [key, label] of CTX_PARTS) {
+    const bytes = Number((m as any)[key] ?? 0);
+    to[key] = m.total > 0 ? (bytes / m.total) * m.tokens : 0;
+    const seg = ctx_segs.get(key);
+    if (seg !== undefined) {
+      seg.style.width = Math.max(0, Math.min(100, (to[key] / window) * 100)) + "%";
+      seg.title = label + ": " + (to[key] / 1000).toFixed(1) + "k tokens, " + bytes + " B";
+    }
+  }
+  ctx_card?.classList.remove("idle");
+  if (ctx_card !== null) {
+    ctx_card.classList.remove("pulse");
+    void ctx_card.offsetWidth;
+    ctx_card.classList.add("pulse");
+  }
+  tween_ctx(to, m.tokens, window);
+}
+
+// a chat with no turn yet: the meter stays on screen, empty
+function reset_ctx(): void {
+  build_ctx();
+  cancelAnimationFrame(ctx_raf);
+  if (ctx_total !== null) {
+    ctx_total.textContent = "—";
+    ctx_total.classList.remove("over");
+  }
+  for (const [key] of CTX_PARTS) {
+    CTX_SHOWN[key] = 0;
+    const seg = ctx_segs.get(key);
+    if (seg !== undefined) {
+      seg.style.width = "0%";
+    }
+    const val = ctx_vals.get(key);
+    if (val !== undefined) {
+      val.textContent = "—";
+    }
+  }
+  ctx_card?.classList.add("idle");
+  ctx_card?.classList.remove("pulse");
 }
 
 function hear(msg: View.Server): void {

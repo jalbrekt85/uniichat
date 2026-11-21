@@ -3165,8 +3165,7 @@ footer {
   right: auto;
   top: 50%;
   bottom: 84px;
-  width: calc(var(--skull) - 48px);
-  max-width: 430px;
+  width: min(360px, calc(var(--skull) - 96px));
   transform: translateX(-50%);
   display: grid;
   align-items: center;
@@ -3184,13 +3183,20 @@ footer {
   font: 10px/1.5 var(--mono);
   letter-spacing: -.005em;
   color: var(--soft);
+  transition: opacity .35s ease, border-color .35s ease;
+}
+.ctx-card.idle { opacity: .5; }
+.ctx-card.pulse { animation: ctx-pulse .7s ease; }
+@keyframes ctx-pulse {
+  0% { border-color: color-mix(in oklab, var(--accent) 55%, var(--hair)); }
+  100% { border-color: var(--hair); }
 }
 #ctx[hidden] { display: none; }
 .ctx-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .14em; font-size: 9px; color: var(--mid); }
 .ctx-head b { font-weight: 500; color: var(--ink); letter-spacing: .02em; font-size: 10px; font-variant-numeric: tabular-nums; }
 .ctx-head b.over { color: var(--red); }
 .ctx-bar { position: relative; display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: color-mix(in oklab, var(--ink) 8%, transparent); }
-.ctx-bar > i { display: block; height: 100%; transition: width .24s ease; }
+.ctx-bar > i { display: block; height: 100%; transition: width .55s cubic-bezier(.22, .61, .36, 1); }
 .ctx-bar > i.ctx-tick { position: absolute; top: -2px; bottom: -2px; left: 80%; width: 1px; background: color-mix(in oklab, var(--ink) 24%, transparent); transition: none; }
 .ctx-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 14px; margin: 9px 0 0; padding: 0; list-style: none; }
 .ctx-legend li { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--soft); }

@@ -40,10 +40,6 @@ export function highlightCode(root: ParentNode): void {
       return;
     }
     const classLang = [...code.classList].find((name) => name.startsWith("language-"))?.slice(9) ?? "";
-    if (pre !== null && pre.dataset.output !== undefined && classLang === "") {
-      code.dataset.highlighted = "yes";
-      return;
-    }
     const label = (classLang !== "" ? classLang : (pre.querySelector<HTMLElement>(".lang")?.textContent ?? "")).trim().toLowerCase();
     const name = ALIASES[label] ?? label;
     const text = code.textContent ?? "";

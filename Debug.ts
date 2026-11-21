@@ -151,6 +151,10 @@ export function snapshot(limit = 120): object {
     counters: counters(),
     lastMain: last("main"),
     lastCompactor: last("compactor"),
+    evictions: {
+      count: ring.filter((event) => event.kind === "evict").length,
+      recent: recent(12, "evict"),
+    },
     labels: {
       count: ring.filter((event) => event.kind === "label").length,
       recent: ring.filter((event) => event.kind === "label").slice(-12),

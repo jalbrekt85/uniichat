@@ -363,9 +363,19 @@ export namespace Agent {
     // the tree's lines for it go back into the items list as a note, where
     // the pair was, so the model is told what left its context.
     const evict = async (): Promise<void> => {
+      const tag = run.ask.tag ?? "main";
       const body = run.bodyBytes;
       const lastItems = run.itemsBytes;
       if (body === undefined || body <= 0 || lastItems === undefined) {
+        if (tag === "main") {
+          Debug.record("evict", tag, {
+            phase: "skip",
+            reason: "no-measure",
+            bodyBytes: body ?? null,
+            itemsBytes: lastItems ?? null,
+            promptTokens: run.inputTokens ?? null,
+          });
+        }
         return;
       }
       const input = run.inputTokens;
@@ -374,7 +384,7 @@ export namespace Agent {
       }
       const window = run.hooks?.window?.();
       if (window === null || window === undefined || window <= 0) {
-        if ((run.ask.tag ?? "main") === "main") {
+        if (tag === "main") {
           throw new Error("The model's context window is unknown; refusing to evict blind.");
         }
         return;
@@ -396,23 +406,45 @@ export namespace Agent {
       if (estimate <= window * 0.8) {
         return;
       }
+      const before = estimate;
       // Only pairs whose two summaries already exist are evicted. A pair
       // whose summaries are missing stays in the items list and is queued
       // in the compactor's real work queue; the main turn does not wait.
       const ready: Pair[] = [];
       const notes: string[] = [];
+      let missing: string[] | null = null;
       for (const pair of pairs) {
         if (estimate <= window * 0.5) {
           break;
         }
         const note = run.hooks?.summary?.([...pair.ids]);
         if (note === undefined || note === null) {
+          missing = [...pair.ids];
           break;
         }
         ready.push(pair);
         notes.push(note);
         estimate -= Agent.itemsBytes([pair.turn, pair.back]) * ratio;
       }
+      // the decision, cut or not, is on disk: an overflow later must be
+      // explainable from this record instead of from memory
+      Debug.record("evict", tag, {
+        phase: "decision",
+        promptTokens: input,
+        bodyBytes: body,
+        itemsBytes: lastItems,
+        itemsNow: Agent.itemsBytes(items),
+        estimateBefore: before,
+        estimateAfter: estimate,
+        window,
+        trigger: window * 0.8,
+        target: window * 0.5,
+        pairs: pairs.length,
+        ready: ready.length,
+        missing,
+        evicted: ready.flatMap((pair) => pair.ids),
+        outcome: ready.length === 0 ? "none" : estimate <= window * 0.5 ? "full" : "partial",
+      });
       if (ready.length === 0) {
         return;
       }
@@ -567,6 +599,19 @@ export namespace Agent {
       if (LIVE !== null && LIVE.items === items) {
         LIVE.done = true;
         LIVE.at = Date.now();
+        // the turn's final context state, on disk like every decision
+        Debug.record("evict", ask.tag ?? "main", {
+          phase: "turn",
+          evictions: LIVE.evictions ?? 0,
+          evictedIds: LIVE.evictedIds ?? [],
+          promptTokens: LIVE.promptTokens ?? null,
+          promptEstimate: LIVE.promptEstimate ?? null,
+          window: LIVE.window ?? null,
+          trigger: LIVE.trigger ?? null,
+          target: LIVE.target ?? null,
+          pairs: LIVE.pairs ?? 0,
+          packets: LIVE.packets ?? 0,
+        });
       }
     }
   }

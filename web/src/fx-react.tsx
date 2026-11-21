@@ -734,13 +734,6 @@ function BrandIsland(): React.ReactElement | null {
   return <BotAvatar type="clover" state={s.busy ? "working" : "default"} size={30} shading="fabric" aria-label="UniiChat" />;
 }
 
-function HeaderBadge(): React.ReactElement | null {
-  const webgl = useMemo(() => hasWebgl(), []);
-  const lite = useMemo(() => isLite(), []);
-  if (!webgl || lite) return null;
-  return <MetalBadge theme="dark">Beta</MetalBadge>;
-}
-
 function ActivityIsland(): React.ReactElement | null {
   const s = useShell();
   const ref = useRef<HTMLDivElement>(null);
@@ -1036,12 +1029,10 @@ export function mountShell(): void {
     return root;
   };
   mount("fx-brand", <BrandIsland />);
-  mount("fx-badge", <HeaderBadge />);
   mount("fx-activity", <ActivityIsland />);
   mount("fx-composer", <ComposerIsland />);
   mount("pics", <PicsIsland />);
   mount("fx-send", <SendIsland />);
   mount("fx-welcome", <WelcomeIsland />);
   mount("fx-skull", <SkullIsland />);
-  mount("fx-gallery", <GalleryIsland />);
 }

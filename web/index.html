@@ -16,7 +16,7 @@
 <link rel="icon" href="/favicon.svg">
 <link rel="stylesheet" href="/style.css?v=20261119l">
 <link rel="stylesheet" href="/redesign.css?v=20261121z">
-<script type="module" src="/app.js?v=20261121ae"></script>
+<script type="module" src="/app.js?v=20261121af"></script>
 </head>
 <!-- the page, as a guest sees it until signed in (web/src/main.ts) -->
 <body class="guest">
@@ -35,14 +35,12 @@
   </label>
   <p class="chats-label">Chats</p>
   <nav class="sessions"></nav>
-  <div class="chats-bottom"><button type="button" data-effects>Effects</button><button type="button" popovertarget="archived">Archived</button><button type="button" data-go="/account">Account</button></div>
+  <div class="chats-bottom"><button type="button" popovertarget="archived">Archived</button><button type="button" data-go="/account">Account</button></div>
 </aside>
 <div id="chats-veil"></div>
 <header>
   <button class="chats-toggle" type="button" aria-label="Chats" aria-controls="chats" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h11"/></svg></button>
   <button class="brand" data-go="/" data-act='{"$":"Goto","name":null}'><span id="fx-brand" class="brand-bot" aria-hidden="true"></span><span>UniiChat</span></button>
-  <span id="fx-badge" class="brand-badge" aria-hidden="true"></span>
-  <button class="effects-open" type="button" data-effects aria-label="Effects library" title="Effects library"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.7 4.6L18 9.3l-4.3 1.7L12 15.6l-1.7-4.6L6 9.3l4.3-1.7z"/><path d="M18.5 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/><path d="M5 15l.6 1.6L7.2 17l-1.6.6L5 19.2l-.6-1.6L2.8 17l1.6-.6z"/></svg><span>Effects</span></button>
   <button class="sound" type="button" data-sound="icon" aria-label="Mute sound effects" title="Sound effects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h3.2L11 6v12l-3.8-3H4z"/><path class="wave" d="M14.5 9a4 4 0 0 1 0 6"/><path class="wave" d="M17 6.5a8 8 0 0 1 0 11"/></svg></button>
   <span class="net">offline</span>
   <button class="imping" popovertarget="import" hidden><span></span><progress max="1" value="0"></progress></button>
@@ -58,7 +56,6 @@
       <p>Workspaces, memory, tools and the effects that make waiting feel alive.</p>
       <div class="welcome-actions">
         <button class="welcome-new" type="button">Start a chat</button>
-        <button class="welcome-effects" type="button" data-effects>Explore effects</button>
       </div>
       <div class="welcome-prompts" aria-label="Starting points">
         <button type="button" data-prompt="Help me plan a focused side project."><span>Plan</span> a side project <i>↗</i></button>
@@ -218,6 +215,5 @@
     <footer class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span class="palette-brand">UniiChat</span></footer>
   </section>
 </div>
-<div id="fx-gallery"></div>
 </body>
 </html>

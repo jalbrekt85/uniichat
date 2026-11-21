@@ -17,7 +17,7 @@ import * as Import from "../../Import.ts";
 import { theme_css } from "../../Theme.ts";
 import * as View from "../../View.ts";
 import * as Html from "./Html.ts";
-import { mountShell, openGallery, setPendingPics, setShell } from "./fx-react";
+import { mountShell, setPendingPics, setShell } from "./fx-react";
 import { initPolish, playSound, setSound, soundEnabled } from "./polish";
 import { highlightCode } from "./code";
 import { SKULL_SEED, type SkullNode, type SkullTree } from "./neural";
@@ -535,7 +535,6 @@ function palette_actions(): PaletteItem[] {
       search.select();
     } },
     { group: "Actions", label: "Open account", detail: "Balance, usage and data", icon: "$", kbd: "A", search: "account billing credit usage", run: () => go("/account") },
-    { group: "Actions", label: "Effects library", detail: "Every real Libraries.dev component", icon: "✦", kbd: "E", search: "effects library animations", run: () => openGallery() },
     { group: "Actions", label: "Archived chats", detail: "Restore a hidden chat", icon: "▣", kbd: "R", search: "archive restore hidden", run: () => $("#archived").showPopover() },
     { group: "Actions", label: "Import history", detail: "Bring past Claude and ChatGPT chats", icon: "⇩", kbd: "I", search: "import history claude chatgpt", run: () => void import_open(false) },
     { group: "Actions", label: soundEnabled() ? "Mute sound effects" : "Enable sound effects", detail: "Interface tones for sends, replies and actions", icon: "♪", kbd: "S", search: "sound audio mute effects", run: () => setSound(!soundEnabled()) },
@@ -923,14 +922,9 @@ function click(ev: MouseEvent): void {
     archive_chat(arc.dataset.archive ?? "", arc.dataset.on === "1");
     return;
   }
-  const el = (ev.target as HTMLElement).closest<HTMLElement>("[data-act], [data-copy], [data-go], [data-usd], [data-session], [data-effects]");
+  const el = (ev.target as HTMLElement).closest<HTMLElement>("[data-act], [data-copy], [data-go], [data-usd], [data-session]");
   const sel = getSelection();
   if (el === null || (sel !== null && !sel.isCollapsed && el.contains(sel.focusNode))) {
-    return;
-  }
-  if (el.closest("[data-effects]") !== null) {
-    ev.preventDefault();
-    openGallery();
     return;
   }
   const { act: a, copy: text, go: path, usd, session: chat } = el.dataset;

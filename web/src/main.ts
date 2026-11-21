@@ -1183,9 +1183,9 @@ function tween_ctx(to: Record<string, number>, tokens: number, window: number): 
   const step = (now: number): void => {
     const t = Math.min(1, (now - start) / 550);
     const e = 1 - Math.pow(1 - t, 3);
-    const shownTotal = fromTotal + (tokens - fromTotal) * e;
+    const shownTotal = Math.max(0, fromTotal + (tokens - fromTotal) * e);
     for (const [key] of CTX_PARTS) {
-      const v = from[key] + (to[key] - from[key]) * e;
+      const v = Math.max(0, from[key] + (to[key] - from[key]) * e);
       CTX_SHOWN[key] = v;
       const val = ctx_vals.get(key);
       if (val !== undefined) {

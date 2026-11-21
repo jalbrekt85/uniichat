@@ -3217,3 +3217,7 @@ footer {
 /* the skull's caption below it is not shown (the model's CC BY credit
    stays on #skull-pane's title attribute) */
 #skull-pane .skull-credit { display: none; }
+
+/* 3d-force-graph's tooltip sits under the pointer; it must not eat the
+   click meant for the node */
+#skull-pane .graph-tooltip { pointer-events: none; }

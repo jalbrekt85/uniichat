@@ -122,6 +122,9 @@ export function mountNeural(host: HTMLElement, dark: boolean, onSelect: (node: S
   const pickMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
   type Materials = { soma: THREE.MeshBasicMaterial; dend: THREE.LineBasicMaterial; glow: THREE.SpriteMaterial };
   const materials = new Map<string, Materials>();
+  // the node objects, by id: hover scales the one under the pointer
+  const nodeGroups = new Map<string, THREE.Group>();
+  let hovered: string | null = null;
   const neuron_materials = (color: string): Materials => {
     let cached = materials.get(color);
     if (cached === undefined) {
@@ -151,14 +154,29 @@ export function mountNeural(host: HTMLElement, dark: boolean, onSelect: (node: S
     halo.scale.setScalar(0.05 * size);
     halo.renderOrder = 9;
     const pick = new THREE.Mesh(pickGeometry, pickMaterial);
-    pick.scale.setScalar(0.06);
+    pick.scale.setScalar(0.12);
     pick.renderOrder = -1;
     group.add(halo, dend, soma, pick);
+    group.userData.nodeId = node.id;
+    nodeGroups.set(node.id, group);
     return group;
   }).linkColor(() => grey).linkOpacity(0.55).linkWidth(0).linkCurvature(0.12).linkResolution(4)
     .dagMode("radialout").warmupTicks(50).cooldownTicks(90).d3AlphaDecay(0.04)
     .onNodeClick((node) => onSelect(node))
-    .onNodeHover((node) => { host.style.cursor = node === null ? "grab" : "pointer"; })
+    .onNodeHover((node) => {
+      host.style.cursor = node === null ? "grab" : "pointer";
+      const id = node === null ? null : node.id;
+      if (id === hovered) {
+        return;
+      }
+      if (hovered !== null) {
+        nodeGroups.get(hovered)?.scale.setScalar(1);
+      }
+      hovered = id;
+      if (id !== null) {
+        nodeGroups.get(id)?.scale.setScalar(1.8);
+      }
+    })
     .onEngineTick(() => {
       // Keep every neuron inside the skull. The camera never zooms, so this
       // radius is stable; no skull rescaling or follow camera is involved.
@@ -191,6 +209,43 @@ export function mountNeural(host: HTMLElement, dark: boolean, onSelect: (node: S
   };
   controls.addEventListener("start", stop);
   controls.addEventListener("end", rest);
+
+  // 3d-force-graph's own click does not fire here (its pointerdown is
+  // consumed before its pointerup); a direct raycast onto the node groups
+  // makes the small neurons clickable, and the same hit test is forgiving
+  const ray = new THREE.Raycaster();
+  let downAt: { x: number; y: number } | null = null;
+  host.addEventListener("pointerdown", (ev) => {
+    downAt = { x: ev.clientX, y: ev.clientY };
+  });
+  host.addEventListener("pointerup", (ev) => {
+    const from = downAt;
+    downAt = null;
+    if (from === null || ev.button !== 0 || Math.abs(ev.clientX - from.x) + Math.abs(ev.clientY - from.y) > 6) {
+      return;
+    }
+    const rect = fg.renderer().domElement.getBoundingClientRect();
+    const at = new THREE.Vector2(
+      ((ev.clientX - rect.left) / rect.width) * 2 - 1,
+      -((ev.clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    ray.setFromCamera(at, fg.camera());
+    for (const hit of ray.intersectObjects([...nodeGroups.values()], true)) {
+      let obj: THREE.Object3D | null = hit.object;
+      while (obj !== null && obj.userData.nodeId === undefined) {
+        obj = obj.parent;
+      }
+      if (obj === null) {
+        continue;
+      }
+      const id = obj.userData.nodeId as string;
+      const node = fg.graphData().nodes.find((item) => item.id === id);
+      if (node !== undefined) {
+        onSelect(node as unknown as Parameters<typeof onSelect>[0]);
+      }
+      return;
+    }
+  });
 
   const fit = (): void => {
     const w = host.clientWidth;
@@ -249,6 +304,10 @@ export function mountNeural(host: HTMLElement, dark: boolean, onSelect: (node: S
 
   const update = (next: SkullTree): void => {
     tree = next;
+    if (hovered !== null) {
+      nodeGroups.get(hovered)?.scale.setScalar(1);
+      hovered = null;
+    }
     const data = flatten(next);
     const maxDepth = data.nodes.reduce((deep, node) => Math.max(deep, node.depth), 1);
     fg.dagLevelDistance(Math.max(0.04, 0.45 / maxDepth));

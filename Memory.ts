@@ -276,7 +276,8 @@ export namespace Memory {
 
   // a view as kept (none: the highest nodes built)
   export function open(mem: Memory, view: View, kept: Kept | null): void {
-    const keys = kept === null ? null : new Set(kept.parts.map(([l, i]) => Memory.slot(l, i)));
+    const parts = kept !== null && Array.isArray(kept.parts) ? kept.parts : null;
+    const keys = parts === null ? null : new Set(parts.map(([l, i]) => Memory.slot(l, i)));
     view.parts = Memory.roots(mem.count).flatMap((part) => Memory.down(mem, part, keys));
     view.size = view.parts.reduce((n, part) => n + Memory.size(mem, part), 0);
     view.batch = kept?.batch ?? false;

@@ -429,7 +429,13 @@ export namespace Chat {
   // the model's context window, read from the model's setting. No constant
   // fallback: a missing window is null, and the eviction hard-errors.
   export function window(chat: Chat): number | null {
-    return chat.pick.vendor === "local-api" ? Local.window(Pick.ask(chat.pick).model) : null;
+    if (chat.pick.vendor === "local-api") {
+      return Local.window(Pick.ask(chat.pick).model);
+    }
+    if (chat.pick.vendor === "zai-api") {
+      return 200000;
+    }
+    return null;
   }
 
   // The pair's summaries if both already exist. If either is missing, put

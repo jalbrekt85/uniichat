@@ -700,7 +700,7 @@ function isLite(): boolean {
 // ---------------------------------------------------------------------------
 // Shell islands
 
-type ShellState = { busy: boolean; wait: string; agents: string[]; welcome: boolean; recording: boolean; stop: boolean; text: boolean; tree: SkullTree; bot: string | null; setBot: (name: string) => void; session: string };
+type ShellState = { busy: boolean; wait: string; agents: string[]; welcome: boolean; recording: boolean; stop: boolean; text: boolean; tree: SkullTree; bot: string | null; setBot: (name: string | null) => void; session: string };
 let shell: ShellState = { busy: false, wait: "", agents: [], welcome: false, recording: false, stop: false, text: false, tree: SKULL_SEED, bot: null, setBot: () => {}, session: "" };
 const shellSubs = new Set<(s: ShellState) => void>();
 
@@ -747,6 +747,10 @@ function BrandIsland(): React.ReactElement | null {
         <div className="bot-picker" role="dialog" aria-label="Choose this chat's bot">
           <div className="bot-picker-head">your bot</div>
           <div className="bot-picker-grid">
+            <button type="button" className={"bot-pick" + (bot === null ? " on" : "")} onClick={() => { s.setBot(null); setOpen(false); }} aria-label="No bot">
+              <span className="bot-pick-empty" aria-hidden="true" />
+              <span>NONE</span>
+            </button>
             {BOTS.map((name) => (
               <button key={name} type="button" className={"bot-pick" + (name === bot ? " on" : "")} onClick={() => { s.setBot(name); setOpen(false); }} aria-label={BOT_NAMES[name]}>
                 <BotAvatar type={name as never} state="default" size={40} shading="fabric" />

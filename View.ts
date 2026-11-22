@@ -136,7 +136,7 @@ export type Body   = () => any;
 // the acts a view sends (out: a job's output): changes, then reads; a
 // message's body is its images (sizes given), then its text
 export type Client =
-  | { $: "bot-avatar"; name: string }
+  | { $: "bot-avatar"; name: string | null }
   | { $: "thought-close" }
   | { $: "say"; sizes: number[]; body: Body }
   | { $: "import"; body: Body }

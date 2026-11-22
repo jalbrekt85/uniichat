@@ -473,6 +473,11 @@ export namespace Agent {
         notes.push(note);
         estimate -= Agent.itemsBytes([pair.turn, pair.back]) * ratio;
       }
+      // a partial cut that keeps the prompt above 90% of the window would
+      // edit the prompt every step and invalidate the prompt cache; wait
+      // for the compactor until the prompt is near the window, then cut
+      // once with everything that is ready
+      const deferred = missing !== null && estimate < window * 0.9;
       // the decision, cut or not, is on disk: an overflow later must be
       // explainable from this record instead of from memory
       Debug.record("evict", tag, {
@@ -490,9 +495,9 @@ export namespace Agent {
         ready: ready.length,
         missing,
         evicted: ready.flatMap((pair) => pair.ids),
-        outcome: ready.length === 0 ? "none" : estimate <= window * 0.5 ? "full" : "partial",
+        outcome: deferred ? "deferred" : ready.length === 0 ? "none" : estimate <= window * 0.5 ? "full" : "partial",
       });
-      if (ready.length === 0) {
+      if (deferred || ready.length === 0) {
         return;
       }
       const note = notes.join("\n\n");

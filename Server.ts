@@ -1780,7 +1780,7 @@ export namespace Chat {
         return {};
       }
       case "bot-avatar": {
-        return Bot.avatar(chat, String(msg.name));
+        return Bot.avatar(chat, msg.name === null || msg.name === undefined ? null : String(msg.name));
       }
       case "thought-close": {
         return Bot.close(chat);
@@ -2080,12 +2080,28 @@ export namespace Bot {
     }
   }
 
-  export function avatar(chat: Chat, raw: string): Answer {
+  export function avatar(chat: Chat, raw: string | null): Answer {
+    const s = state(chat);
+    if (raw === null || raw === "none") {
+      if (s.avatar === null && s.pending === null) {
+        return {};
+      }
+      s.avatar = null;
+      s.due = null;
+      s.base = null;
+      s.from = null;
+      s.at = null;
+      s.pending = null;
+      save(chat);
+      Debug.record("bot", chat.session, { phase: "avatar", avatar: null });
+      Chat.all(chat, Chat.state(chat));
+      Chat.all(chat, { $: "thought-close" });
+      return {};
+    }
     const name = bot_name(raw);
     if (name === null) {
       return { error: "Unknown bot." };
     }
-    const s = state(chat);
     if (s.avatar === name) {
       return {};
     }

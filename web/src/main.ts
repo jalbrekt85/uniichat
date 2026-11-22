@@ -2158,7 +2158,7 @@ function bars(): void {
   const activity = document.getElementById("fx-activity");
   if (activity !== null) activity.hidden = output;
   document.body.classList.toggle("has-output", output);
-  setShell({ busy: v.busy, wait: v.wait, agents: v.agents, recording: P.rec !== null, welcome: empty, stop, text: output, tree: tree_for_view(), bot: v.bot, session: v.session, setBot: (name: string) => View.link_send(v, { $: "bot-avatar", name } as never) });
+  setShell({ busy: v.busy, wait: v.wait, agents: v.agents, recording: P.rec !== null, welcome: empty, stop, text: output, tree: tree_for_view(), bot: v.bot, session: v.session, setBot: (name: string | null) => View.link_send(v, { $: "bot-avatar", name } as never) });
   jump_update();
   refreshPalette();
 }

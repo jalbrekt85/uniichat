@@ -70,6 +70,13 @@ export namespace Anthropic {
       }
     }
     const cache = ask.blocks[ask.blocks.length - 1]?.mark ? MARK : undefined;
+    // cache the whole prompt through its current end, not just the stable
+    // head: the running turn is otherwise re-prefilled on every step
+    const tail = messages[messages.length - 1];
+    const end = tail?.content?.[tail.content.length - 1];
+    if (end !== undefined && end !== null && typeof end === "object") {
+      end.cache_control = MARK;
+    }
     return {
       model         : ask.model,
       max_tokens    : max,

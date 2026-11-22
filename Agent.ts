@@ -795,9 +795,13 @@ export namespace Agent {
       return { res: null, step: Agent.fail(grant, []) };
     }
     const waited = Date.now();
+    // z.ai serialises requests per key; a main call over a long prompt can
+    // hold the single-flight far past 15s, so let z.ai calls queue instead
+    // of failing the compactor (and the turn behind it)
+    const limit = run.ask.vendor === "zai-api" ? 180000 : 15000;
     const flight = await Promise.race([
       AskAI.wait(run.ask),
-      new Promise<null>((done) => setTimeout(() => done(null), 15000)),
+      new Promise<null>((done) => setTimeout(() => done(null), limit)),
     ]);
     if (flight === null) {
       Debug.record("agent", run.ask.tag ?? "main", {
@@ -805,7 +809,7 @@ export namespace Agent {
         ms: Date.now() - waited,
         model: run.ask.model,
       });
-      return { res: null, step: Agent.fail("single-flight wait exceeded 15s", []) };
+      return { res: null, step: Agent.fail("single-flight wait exceeded " + Math.round(limit / 1000) + "s", []) };
     }
     Debug.record("agent", run.ask.tag ?? "main", {
       phase: "single-flight",

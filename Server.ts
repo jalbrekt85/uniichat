@@ -1696,6 +1696,13 @@ export namespace Chat {
   // by Cloud.act_put as the log indexes it), gets that answer; else
   // Chat.act does it, answered once on disk
   export function apply(chat: Chat, msg: any, device: string): Promise<Answer> {
+    // A device's "out" is a tool result, not a client act: it has no id.
+    // Keying it as "undefined" would let one earlier no-id answer in
+    // cloud.db drop every later shell result before Tools.done sees it.
+    // Run untagged messages directly; never cache them under one id.
+    if (msg.id === undefined || msg.id === null) {
+      return Chat.act(chat, crypto.randomUUID(), msg, device).catch(Chat.fail);
+    }
     const id = String(msg.id);
     const was = chat.acts.get(id) ?? (Cloud.act_get(chat.acct, id) as Answer | null);
     if (was !== null) {

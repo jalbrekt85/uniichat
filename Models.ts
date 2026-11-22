@@ -14,7 +14,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { EFFORTS, SPEEDS } from "./Pick.ts";
+import { EFFORTS, SPEEDS, VENDORS } from "./Pick.ts";
 import type { Vendor } from "./AskAI.ts";
 
 // Types
@@ -23,7 +23,7 @@ import type { Vendor } from "./AskAI.ts";
 export type Choice = { vendor: Vendor; model: string; effort: string; speed: string };
 
 // models.json: what a model entry may hold (checked below)
-type Named = { model?: unknown; effort?: unknown; speed?: unknown };
+type Named = { vendor?: unknown; model?: unknown; effort?: unknown; speed?: unknown };
 
 // Constants
 // =========
@@ -34,11 +34,15 @@ const FILE = path.join(import.meta.dir, "models.json");
 // ======
 
 function choice(raw: Named | undefined, key: string): Choice {
+  const vendor = typeof raw?.vendor === "string" ? raw.vendor : "local-api";
   const model  = typeof raw?.model === "string" ? raw.model.trim() : "";
   const effort = typeof raw?.effort === "string" ? raw.effort : "";
   const speed  = typeof raw?.speed === "string" ? raw.speed : "";
   if (model === "") {
     throw new Error("models.json: " + key + ".model is empty");
+  }
+  if (!VENDORS.includes(vendor as Vendor)) {
+    throw new Error("models.json: " + key + ".vendor is not one of " + VENDORS.join(", "));
   }
   if (!EFFORTS.includes(effort)) {
     throw new Error("models.json: " + key + ".effort is not one of " + EFFORTS.join(", "));
@@ -46,7 +50,7 @@ function choice(raw: Named | undefined, key: string): Choice {
   if (!SPEEDS.includes(speed)) {
     throw new Error("models.json: " + key + ".speed is not one of " + SPEEDS.join(", "));
   }
-  return { vendor: "local-api", model, effort, speed };
+  return { vendor: vendor as Vendor, model, effort, speed };
 }
 
 const RAW = JSON.parse(fs.readFileSync(FILE, "utf8"));

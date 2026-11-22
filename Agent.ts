@@ -36,6 +36,7 @@ import { AskAI, type Grant, type Cost, type Ask, type Block, type Flight, type T
 import { Anthropic } from "./Anthropic.ts";
 import { OpenAI } from "./OpenAI.ts";
 import { Zai } from "./Zai.ts";
+import { DeepSeek } from "./DeepSeek.ts";
 import { Local } from "./Local.ts";
 import { Price, type Usage } from "./Price.ts";
 import { live_push } from "./View.ts";
@@ -322,6 +323,8 @@ export namespace Agent {
           await Agent.loop(Anthropic.wire, run);
         } else if (ask.vendor === "zai-api") {
           await Agent.loop(Zai.wire, run);
+        } else if (ask.vendor === "deepseek-api") {
+          await Agent.loop(DeepSeek.wire, run);
         } else if (ask.vendor === "local-api") {
           await Agent.loop(Local.wire, run);
         } else {

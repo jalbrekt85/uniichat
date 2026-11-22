@@ -28,6 +28,8 @@ const RATES: Record<string, Rate> = {
   "gpt-6-luna"        : { input: 0.1, write: 0.1,  read: 0.01, output: 0.5 },
   "glm-5.3"           : { input: 1.4, write: 1.75, read: 0.26, output: 4.4 },
   "glm-5.3-flash"     : { input: 0.15, write: 0.1875, read: 0.03, output: 0.5 },
+  "deepseek-flash"    : { input: 0.3,  write: 0.006, read: 0.006, output: 1.2 },
+  "deepseek-v4-pro"   : { input: 1.32, write: 0.044, read: 0.044, output: 3.96 },
   // local oMLX models: self-hosted, no vendor meter
   "qwen3.6-35b"       : { input: 0, write: 0, read: 0, output: 0 },
   "qwen2.5-0.5b"      : { input: 0, write: 0, read: 0, output: 0 },

@@ -35,7 +35,7 @@ export type Offer = { vendors: Vendor[]; models: string[] };
 // Constants
 // =========
 
-export const VENDORS: Vendor[] = ["claude-api", "openai-api", "zai-api", "local-api"];
+export const VENDORS: Vendor[] = ["claude-api", "openai-api", "zai-api", "deepseek-api", "local-api"];
 
 const OPUS  : Model = { label: "opus-5.5",   id: "claude-opus-5-5",   speeds: ["slow", "fast"] };
 const SONNET: Model = { label: "sonnet-5.5", id: "claude-sonnet-5-5", speeds: ["slow"] };
@@ -49,6 +49,12 @@ const GLM: Model[] = [
   { label: "glm-5.3",     id: "glm-5.3",     speeds: ["slow"] },
   { label: "glm-5.3-flash", id: "glm-5.3-flash", speeds: ["slow"] },
 ];
+// deepseek-flash is served by DeepSeek-V4.1-Flash-1017 (the current 4.1
+// iteration; vision yes); deepseek-v4-pro (V4-Pro-0813) has no vision.
+const DS: Model[] = [
+  { label: "deepseek-4.1-flash-1017", id: "deepseek-flash",  speeds: ["slow"] },
+  { label: "deepseek-v4-pro",         id: "deepseek-v4-pro", speeds: ["slow"] },
+];
 // no local table: local-api's models are models.json, and nothing here
 // names one, so a new id needs no code change
 
@@ -57,6 +63,7 @@ const MODELS: Record<Vendor, Model[]> = {
   "claude-api": [OPUS, SONNET, HAIKU],
   "openai-api": OPENAI,
   "zai-api"   : GLM,
+  "deepseek-api": DS,
   "local-api" : [],
 };
 

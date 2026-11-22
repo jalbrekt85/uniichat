@@ -60,6 +60,7 @@ const VARS: Record<string, string> = {
   anthropic       : "ANTHROPIC_API_KEY",
   openai          : "OPENAI_API_KEY",
   zai             : "ZAI_API_KEY",
+  deepseek        : "DEEPSEEK_API_KEY",
   local           : "LOCAL_API_KEY",
   resend          : "RESEND_API_KEY",
   apns            : "APNS_KEY",

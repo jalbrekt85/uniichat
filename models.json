@@ -6,8 +6,8 @@
     "speed": "slow"
   },
   "compactor": {
-    "vendor": "zai-api",
-    "model": "glm-5.3-flash",
+    "vendor": "deepseek-api",
+    "model": "deepseek-flash",
     "effort": "low",
     "speed": "slow"
   }

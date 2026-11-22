@@ -37,7 +37,7 @@ import type { Usage } from "./Price.ts";
 // result, a note from before the chat (imported)
 export type Kind = "user" | "work" | "mind" | "unii" | "tool" | "echo" | "note";
 
-export type Vendor = "claude-api" | "openai-api" | "zai-api" | "local-api";
+export type Vendor = "claude-api" | "openai-api" | "zai-api" | "deepseek-api" | "local-api";
 
 // an image: its mime type, its bytes in base64
 export type Img = { type: string; data: string };
@@ -177,6 +177,7 @@ export const TTL: Record<Vendor, number> = {
   "claude-api" : 300e3,
   "openai-api" : 1800e3,
   "zai-api"    : 300e3,
+  "deepseek-api": 300e3,
 };
 
 // the prefixes cached, by key (AskAI.keys)

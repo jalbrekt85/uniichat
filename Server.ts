@@ -2734,7 +2734,9 @@ document.getElementById("f").onsubmit = async (e) => {
         maxPayloadLength         : FRAME,
         backpressureLimit        : BUFFER,
         closeOnBackpressureLimit : true,
-        idleTimeout              : PING / 1000,
+        // no idle close: a device's shell job can run past the ping
+        // interval with no traffic on its socket
+        idleTimeout              : 0,
         open(ws: Sock) {
           Main.opened(ws.data.user.id, 1);
           Main.event("a socket of user " + ws.data.user.id, () => {

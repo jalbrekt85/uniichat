@@ -1123,7 +1123,7 @@ export namespace Agent {
       method  : "POST",
       headers : { "content-type": "application/json" },
       body    : JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-      signal  : AbortSignal.any([run.abort.signal, AbortSignal.timeout(10000)]),
+      signal  : run.abort.signal,
       timeout : false,
     } as RequestInit);
     const msg = await res.json();

@@ -1,7 +1,7 @@
 {
   "main": {
     "model": "glm-5.3-flash",
-    "effort": "max",
+    "effort": "medium",
     "speed": "slow"
   },
   "compactor": {

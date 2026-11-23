@@ -1,7 +1,7 @@
 {
   "main": {
     "vendor": "zai-api",
-    "model": "glm-5.3",
+    "model": "glm-5.4",
     "effort": "max",
     "speed": "slow"
   },

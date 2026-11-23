@@ -343,14 +343,40 @@ export namespace Tools {
     return null;
   }
 
+  // A tool's device is one of the names connected now, never a free string:
+  // old context cannot inject a former name, and there is no alias mapping.
+  function live_devices(tools: Tools, specs: Spec[]): Spec[] {
+    const names = Tools.opened(tools).map(([name]) => name);
+    return specs.map((s) => {
+      const properties = (s.schema as { properties?: Record<string, any> }).properties;
+      if (properties === undefined || properties.device === undefined) {
+        return s;
+      }
+      return {
+        ...s,
+        schema: {
+          ...s.schema,
+          properties: {
+            ...properties,
+            device: {
+              type: "string",
+              enum: names,
+              description: "The connected device to run on; one of the live names.",
+            },
+          },
+        },
+      };
+    });
+  }
+
   export function list(tools: Tools, who: string): Spec[] {
     // a cloud vendor runs the server-side tool itself; local oMLX cannot,
     // so there the harness runs its own, silently and with no provider
     const own = tools.hooks.pick().vendor === "local-api" ? [...OWN, SEARCH, FETCH] : OWN;
     if (who === "main") {
-      return [...own, ...BOSS, ...kit(who), HAND];
+      return live_devices(tools, [...own, ...BOSS, ...kit(who), HAND]);
     }
-    return tools.agents.get(who)?.role.$ === "hands" ? [COMPUTER] : [...own, ...kit(who)];
+    return tools.agents.get(who)?.role.$ === "hands" ? [COMPUTER] : live_devices(tools, [...own, ...kit(who)]);
   }
 
   // id: a job's, if it starts one

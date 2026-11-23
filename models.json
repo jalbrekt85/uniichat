@@ -3,7 +3,8 @@
     "vendor": "zai-api",
     "model": "glm-5.4",
     "effort": "max",
-    "speed": "slow"
+    "speed": "slow",
+    "window": 1000000
   },
   "compactor": {
     "vendor": "deepseek-api",

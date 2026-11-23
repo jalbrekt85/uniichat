@@ -50,6 +50,7 @@ import { Local } from "./Local.ts";
 import { JOBS, Memory, type Given, type Msg as Log, type Share } from "./Memory.ts";
 import { OpenAI, TRANSCRIBER } from "./OpenAI.ts";
 import { Pick, EFFORTS } from "./Pick.ts";
+import { MAIN, COMPACTOR } from "./Models.ts";
 import { Price } from "./Price.ts";
 import { Sessions } from "./Sessions.ts";
 import { MASTER, SEARCHES, Tools, type Agent, type Live, type Moved as Kit } from "./Tools.ts";
@@ -432,10 +433,13 @@ export namespace Chat {
     if (chat.pick.vendor === "local-api") {
       return Local.window(Pick.ask(chat.pick).model);
     }
-    if (chat.pick.vendor === "zai-api") {
-      return 200000;
-    }
-    return null;
+    const choice =
+      chat.pick.vendor === MAIN.vendor && chat.pick.model === MAIN.model
+        ? MAIN
+        : chat.pick.vendor === COMPACTOR.vendor && chat.pick.model === COMPACTOR.model
+          ? COMPACTOR
+          : null;
+    return choice?.window ?? null;
   }
 
   // The pair's summaries if both already exist. If either is missing, put

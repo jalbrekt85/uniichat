@@ -20,10 +20,10 @@ import type { Vendor } from "./AskAI.ts";
 // Types
 // =====
 
-export type Choice = { vendor: Vendor; model: string; effort: string; speed: string };
+export type Choice = { vendor: Vendor; model: string; effort: string; speed: string; window?: number };
 
 // models.json: what a model entry may hold (checked below)
-type Named = { vendor?: unknown; model?: unknown; effort?: unknown; speed?: unknown };
+type Named = { vendor?: unknown; model?: unknown; effort?: unknown; speed?: unknown; window?: unknown };
 
 // Constants
 // =========
@@ -50,7 +50,15 @@ function choice(raw: Named | undefined, key: string): Choice {
   if (!SPEEDS.includes(speed)) {
     throw new Error("models.json: " + key + ".speed is not one of " + SPEEDS.join(", "));
   }
-  return { vendor: vendor as Vendor, model, effort, speed };
+  let window: number | undefined;
+  if (raw?.window === undefined) {
+    window = undefined;
+  } else if (typeof raw.window === "number" && Number.isInteger(raw.window) && raw.window > 0) {
+    window = raw.window;
+  } else {
+    throw new Error("models.json: " + key + ".window must be a positive integer");
+  }
+  return { vendor: vendor as Vendor, model, effort, speed, ...(window !== undefined ? { window } : {}) };
 }
 
 const RAW = JSON.parse(fs.readFileSync(FILE, "utf8"));
